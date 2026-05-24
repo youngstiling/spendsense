@@ -118,6 +118,66 @@ export function topPubBySpend(
   };
 }
 
+export type PubPerformanceSummary = {
+  topPub: { pub: string; total: number };
+  worstPub: { pub: string; total: number };
+  /** Share of portfolio total spend (0–100). */
+  topPercentage: number;
+  insight: string;
+};
+
+function topAndWorstFromPubTotals(pubTotals: Record<string, number>) {
+  const entries = Object.entries(pubTotals);
+  if (!entries.length) return null;
+
+  const topPub = entries.reduce(
+    (max, [pub, total]) => (total > max.total ? { pub, total } : max),
+    { pub: "", total: 0 }
+  );
+
+  const worstPub = entries.reduce(
+    (min, [pub, total]) => (total < min.total ? { pub, total } : min),
+    { pub: "", total: Infinity }
+  );
+
+  if (!topPub.pub || worstPub.total === Infinity) return null;
+
+  return { topPub, worstPub };
+}
+
+/** Top + worst pub, portfolio % for leader, and a short insight line. */
+export function computePubPerformance(
+  rows: Array<{ pub?: string; amount: number }>,
+  portfolioTotal?: number
+): PubPerformanceSummary | null {
+  const pubTotals: Record<string, number> = {};
+  for (const row of rows) {
+    const pub = row.pub?.trim();
+    if (!pub) continue;
+    pubTotals[pub] = (pubTotals[pub] ?? 0) + row.amount;
+  }
+
+  const ranked = topAndWorstFromPubTotals(pubTotals);
+  if (!ranked) return null;
+
+  const { topPub, worstPub } = ranked;
+  const total = portfolioTotal ?? sumAmount(rows);
+  const topPercentage = total > 0 ? (topPub.total / total) * 100 : 0;
+  const pct = topPercentage.toFixed(1);
+  const pubCount = Object.keys(pubTotals).length;
+
+  let insight: string;
+  if (pubCount === 1) {
+    insight = `${topPub.pub} is the only pub in this view and represents ${pct}% of spend.`;
+  } else if (topPub.pub === worstPub.pub) {
+    insight = `${topPub.pub} accounts for ${pct}% of spend in this selection.`;
+  } else {
+    insight = `${topPub.pub} leads at ${pct}% of total spend. ${worstPub.pub} has the lowest spend — check whether that's site size or under-trading.`;
+  }
+
+  return { topPub, worstPub, topPercentage, insight };
+}
+
 export function calculatePubSummary(
   rows: PubScopedRow[],
   pub: string

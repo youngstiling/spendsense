@@ -95,6 +95,54 @@ export function computeSpendByCategory(rows: InsightRow[]): ChartDatum[] {
     .sort((a, b) => b.value - a.value);
 }
 
+export type BeerVsFoodSummary = {
+  beerTotal: number;
+  foodTotal: number;
+  beerPercentage: number;
+  foodPercentage: number;
+  insight: string;
+};
+
+function totalForCategory(rows: InsightRow[], category: string): number {
+  const needle = category.toLowerCase();
+  return rows
+    .filter((t) => (t.category?.trim() ?? "").toLowerCase() === needle)
+    .reduce((sum, t) => sum + t.amount, 0);
+}
+
+/** Beer vs food spend totals, portfolio %, and a short insight. */
+export function computeBeerVsFood(
+  rows: InsightRow[],
+  portfolioTotal?: number
+): BeerVsFoodSummary | null {
+  const beerTotal = totalForCategory(rows, "Beer");
+  const foodTotal = totalForCategory(rows, "Food");
+  if (beerTotal === 0 && foodTotal === 0) return null;
+
+  const total = portfolioTotal ?? sumAmount(rows);
+  const beerPercentage = total > 0 ? (beerTotal / total) * 100 : 0;
+  const foodPercentage = total > 0 ? (foodTotal / total) * 100 : 0;
+  const beerPct = beerPercentage.toFixed(1);
+  const foodPct = foodPercentage.toFixed(1);
+
+  let insight: string;
+  if (beerTotal > foodTotal) {
+    insight = `Beer spend (${beerPct}% of portfolio) is ahead of food (${foodPct}%).`;
+  } else if (foodTotal > beerTotal) {
+    insight = `Food spend (${foodPct}% of portfolio) is ahead of beer (${beerPct}%).`;
+  } else {
+    insight = `Beer and food spend are level at ${formatGbp(beerTotal)} each (${beerPct}% of portfolio).`;
+  }
+
+  return {
+    beerTotal,
+    foodTotal,
+    beerPercentage,
+    foodPercentage,
+    insight,
+  };
+}
+
 export function computeDashboardKpis(rows: InsightRow[]): DashboardKpis {
   const totalSpend = sumAmount(rows);
   const { percent } = measureUncategorised(rows, totalSpend);

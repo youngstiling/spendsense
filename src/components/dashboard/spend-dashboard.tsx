@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { generateInsights } from "@/lib/brand-category";
 import type { Row } from "@/lib/csv";
 import {
+  computeBeerVsFood,
   computeDashboardKpis,
   computeSpendByCategory,
   computeSpendByMonth,
@@ -13,7 +14,7 @@ import {
   filterRowsByPub,
   listPubNames,
 } from "@/lib/dashboard-analytics";
-import { pubsAboveAverageSpend } from "@/lib/pub-summary";
+import { computePubPerformance, pubsAboveAverageSpend } from "@/lib/pub-summary";
 import { calculateSavingsOpportunity } from "@/lib/savings-opportunity";
 import { downloadSpendCsv } from "./export-csv";
 import { formatMoney, formatMoneyPrecise } from "./format";
@@ -25,6 +26,8 @@ import {
 } from "./dashboard-extras";
 import { InsightsPanel } from "./insights-panel";
 import { KPICard } from "./kpi-card";
+import { BeerVsFoodPanel } from "./beer-vs-food-panel";
+import { PubPerformancePanel } from "./pub-performance-panel";
 
 const SpendCharts = dynamic(
   () => import("./spend-charts").then((m) => m.SpendCharts),
@@ -67,6 +70,16 @@ export function SpendDashboard({ enrichedData }: { enrichedData: Row[] }) {
         pubFilter !== "all" ? { pub: pubFilter } : undefined
       ),
     [scoped, pubFilter]
+  );
+
+  const pubPerformance = useMemo(
+    () => computePubPerformance(scoped, kpis.totalSpend),
+    [scoped, kpis.totalSpend]
+  );
+
+  const beerVsFood = useMemo(
+    () => computeBeerVsFood(scoped, kpis.totalSpend),
+    [scoped, kpis.totalSpend]
   );
 
   return (
@@ -157,6 +170,10 @@ export function SpendDashboard({ enrichedData }: { enrichedData: Row[] }) {
         />
         </div>
       </section>
+
+      <PubPerformancePanel performance={pubPerformance} />
+
+      <BeerVsFoodPanel comparison={beerVsFood} />
 
       <SpendCharts
         pubData={pubData}
