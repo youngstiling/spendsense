@@ -4,7 +4,10 @@ import { updateSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
   try {
-    if (isAuthSkipped()) {
+    if (
+      isAuthSkipped() ||
+      request.nextUrl.pathname.startsWith("/dashboard")
+    ) {
       return NextResponse.next();
     }
     return await updateSession(request);
