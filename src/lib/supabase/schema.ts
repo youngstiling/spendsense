@@ -25,6 +25,7 @@ export const SpendTxCol = {
 } as const;
 
 /** PostgREST select list — must match columns that exist in full-setup.sql. */
+/** Full schema (after fix-spend-transactions-schema.sql). */
 export const SPEND_TRANSACTION_SELECT = [
   SpendTxCol.date,
   SpendTxCol.supplier,
@@ -34,6 +35,14 @@ export const SPEND_TRANSACTION_SELECT = [
   SpendTxCol.pub,
   SpendTxCol.description,
   SpendTxCol.importBatchId,
+].join(", ");
+
+/** Legacy table (supplier only — your original SQL Editor script). */
+export const SPEND_TRANSACTION_SELECT_LEGACY = [
+  SpendTxCol.date,
+  SpendTxCol.supplier,
+  SpendTxCol.category,
+  SpendTxCol.amount,
 ].join(", ");
 
 /** Row shape returned from spend_transactions (client-readable fields). */

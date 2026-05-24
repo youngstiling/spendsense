@@ -13,7 +13,7 @@ import {
   SPEND_TRANSACTIONS_TABLE,
   toSpendTransactionInsert,
 } from "@/lib/spend-transaction-db";
-import { schemaFixHint } from "@/lib/supabase/schema";
+import { isSchemaMismatchError, schemaFixHint } from "@/lib/supabase/schema";
 
 export type PersistIngestOptions = {
   filename: string;
@@ -103,7 +103,20 @@ export async function persistIngestedRows(
       toSpendTransactionInsert(r, user.id)
     );
 
-    const { error } = await supabase.from(SPEND_TRANSACTIONS_TABLE).insert(chunk);
+    let { error } = await supabase.from(SPEND_TRANSACTIONS_TABLE).insert(chunk);
+
+    if (error && isSchemaMismatchError(error.message)) {
+      const legacyChunk = chunk.map(
+        ({
+          canonical_supplier: _c,
+          pub: _p,
+          description: _d,
+          import_batch_id: _b,
+          ...rest
+        }) => rest
+      );
+      ({ error } = await supabase.from(SPEND_TRANSACTIONS_TABLE).insert(legacyChunk));
+    }
 
     if (error) {
       const hint = schemaFixHint(error.message);

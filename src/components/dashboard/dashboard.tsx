@@ -39,9 +39,12 @@ export default function Dashboard() {
     setSchemaError(null);
 
     if (supabaseSource) {
-      const { rows: fromDb, error, schemaHint } = await fetchSpendTransactions();
-      if (schemaHint || (error && /column|schema|canonical_supplier/i.test(error))) {
+      const { rows: fromDb, error, schemaHint, usingLegacySchema } =
+        await fetchSpendTransactions();
+      if (error && !usingLegacySchema) {
         setSchemaError(schemaHint || error || "Database schema mismatch.");
+      } else if (usingLegacySchema && schemaHint && fromDb.length > 0) {
+        setSchemaError(schemaHint);
       } else if (error) {
         console.warn("[dashboard] spend_transactions:", error);
       }
@@ -101,7 +104,11 @@ export default function Dashboard() {
 
         {schemaError && (
           <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-            {schemaError}
+            <p>{schemaError}</p>
+            <p className="mt-2 text-xs">
+              Supabase → SQL Editor → paste{" "}
+              <strong>supabase/ONE_CLICK_FIX.sql</strong> → Run
+            </p>
           </div>
         )}
 
@@ -120,15 +127,13 @@ export default function Dashboard() {
                 : "No data yet. Start with demo data or upload a CSV (demo mode uses browser storage only)."}
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-              {!supabaseSource && (
-                <button
-                  type="button"
-                  onClick={loadDemoData}
-                  className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
-                >
-                  Load demo data
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={loadDemoData}
+                className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+              >
+                Load demo data
+              </button>
               <Link
                 href={supabaseSource ? "/login" : "/import"}
                 className="inline-flex rounded-xl border border-turquoise-200 bg-turquoise-50 px-5 py-2.5 text-sm font-semibold text-turquoise-900 transition hover:bg-turquoise-100"
