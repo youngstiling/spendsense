@@ -41,14 +41,21 @@ export function toSpendTransactionInsert(
 export function rowsFromSpendTransactions(
   records: SpendTransactionRecord[]
 ): Row[] {
-  return records.map((r) => ({
-    date: String(r.date ?? ""),
-    supplier: String(r.supplier ?? "UNKNOWN"),
-    supplierRaw: r.supplier,
-    canonicalSupplier: r.canonical_supplier ?? undefined,
-    category: String(r.category ?? ""),
-    amount: Number(r.amount) || 0,
-    pub: r.pub ?? undefined,
-    description: r.description ?? undefined,
-  }));
+  return records.map((r) => {
+    const supplier = String(r.supplier ?? "UNKNOWN");
+    const canonical =
+      r.canonical_supplier?.trim() ||
+      consolidateSupplier(supplier).canonicalSupplier;
+
+    return {
+      date: String(r.date ?? ""),
+      supplier: canonical,
+      supplierRaw: r.supplier,
+      canonicalSupplier: canonical,
+      category: String(r.category ?? ""),
+      amount: Number(r.amount) || 0,
+      pub: r.pub ?? undefined,
+      description: r.description ?? undefined,
+    };
+  });
 }

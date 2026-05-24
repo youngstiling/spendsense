@@ -8,8 +8,15 @@ import {
 } from "@/lib/spend-transaction-db";
 import { createClient } from "@/lib/supabase/client";
 
-const SPEND_TX_SELECT =
+const SPEND_TX_SELECT_FULL =
   "date, supplier, canonical_supplier, category, amount, pub, description";
+
+/** Older DBs may only have core columns until fix-spend-transactions-schema.sql is run. */
+const SPEND_TX_SELECT_LEGACY = "date, supplier, category, amount";
+
+function isMissingColumnError(message: string): boolean {
+  return /column|does not exist|schema cache/i.test(message);
+}
 
 /** Load the signed-in user's rows from spend_transactions. */
 export async function fetchSpendTransactions(): Promise<{
@@ -29,18 +36,32 @@ export async function fetchSpendTransactions(): Promise<{
     return { rows: [] };
   }
 
-  const { data, error } = await supabase
+  const full = await supabase
     .from(SPEND_TRANSACTIONS_TABLE)
-    .select(SPEND_TX_SELECT)
+    .select(SPEND_TX_SELECT_FULL)
     .eq("user_id", user.id)
     .order("date", { ascending: true });
 
-  if (error) {
-    return { rows: [], error: error.message };
+  let records: SpendTransactionRecord[] =
+    (full.data as SpendTransactionRecord[] | null) ?? [];
+  let fetchError = full.error;
+
+  if (fetchError && isMissingColumnError(fetchError.message)) {
+    const legacy = await supabase
+      .from(SPEND_TRANSACTIONS_TABLE)
+      .select(SPEND_TX_SELECT_LEGACY)
+      .eq("user_id", user.id)
+      .order("date", { ascending: true });
+    records = (legacy.data as SpendTransactionRecord[] | null) ?? [];
+    fetchError = legacy.error;
+  }
+
+  if (fetchError) {
+    return { rows: [], error: fetchError.message };
   }
 
   return {
-    rows: rowsFromSpendTransactions((data ?? []) as SpendTransactionRecord[]),
+    rows: rowsFromSpendTransactions(records),
   };
 }
 

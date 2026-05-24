@@ -11,6 +11,17 @@
 2. Open `supabase/schema.sql` from this repo, copy all of it, paste into the editor.
 3. Click **Run**. You should see success (table `spend_transactions` + RLS policies).
 
+**Schema out of date (imports or dashboard fail on `canonical_supplier` / `pub`):** run **`supabase/fix-spend-transactions-schema.sql`** in the SQL Editor, then re-check:
+
+```sql
+select table_schema, table_name, column_name
+from information_schema.columns
+where table_name = 'spend_transactions'
+  and column_name ilike '%supplier%';
+```
+
+You should see `supplier` and `canonical_supplier`.
+
 ## 3. Auth (magic link)
 
 1. **Authentication** → **Providers** → ensure **Email** is enabled.

@@ -113,6 +113,10 @@ alter table spend_transactions
 create index if not exists spend_transactions_import_batch_id_idx
   on spend_transactions(import_batch_id);
 
+alter table spend_transactions
+  add column if not exists pub text,
+  add column if not exists description text;
+
 alter table csv_import_jobs enable row level security;
 alter table csv_import_errors enable row level security;
 alter table csv_column_mapping_templates enable row level security;

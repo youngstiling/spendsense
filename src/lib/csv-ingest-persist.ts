@@ -102,7 +102,18 @@ export async function persistIngestedRows(
       toSpendTransactionInsert(r, user.id)
     );
 
-    const { error } = await supabase.from(SPEND_TRANSACTIONS_TABLE).insert(chunk);
+    let { error } = await supabase.from(SPEND_TRANSACTIONS_TABLE).insert(chunk);
+
+    if (
+      error &&
+      /canonical_supplier|column|does not exist|schema cache/i.test(error.message)
+    ) {
+      const legacyChunk = chunk.map(
+        ({ canonical_supplier: _c, pub: _p, description: _d, ...rest }) => rest
+      );
+      ({ error } = await supabase.from(SPEND_TRANSACTIONS_TABLE).insert(legacyChunk));
+    }
+
     if (error) {
       return {
         ok: false,
