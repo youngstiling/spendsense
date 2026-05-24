@@ -6,11 +6,11 @@ import { AppNav } from "@/components/app-nav";
 import { SpendDashboard } from "@/components/dashboard/spend-dashboard";
 import {
   clearStoredRows,
-  isDemoModeClient,
   loadQuickDemoRows,
   loadStoredRows,
   replaceDemoRows,
 } from "@/lib/config";
+import { usesSupabaseAsDataSourceClient } from "@/lib/data-source";
 import { enrichTransactions } from "@/lib/brand-category";
 import type { Row } from "@/lib/csv";
 import { deleteAllSpendData, fetchSpendTransactions } from "@/lib/spend-data";
@@ -32,20 +32,25 @@ function enrichLoaded(rows: Row[]): Row[] {
 export default function Dashboard() {
   const [rows, setRows] = useState<Row[]>([]);
   const [ready, setReady] = useState(false);
+  const [schemaError, setSchemaError] = useState<string | null>(null);
+  const supabaseSource = usesSupabaseAsDataSourceClient();
 
   const refreshData = useCallback(async () => {
-    if (!isDemoModeClient()) {
-      const { rows: fromDb, error } = await fetchSpendTransactions();
-      if (error) {
+    setSchemaError(null);
+
+    if (supabaseSource) {
+      const { rows: fromDb, error, schemaHint } = await fetchSpendTransactions();
+      if (schemaHint || (error && /column|schema|canonical_supplier/i.test(error))) {
+        setSchemaError(schemaHint || error || "Database schema mismatch.");
+      } else if (error) {
         console.warn("[dashboard] spend_transactions:", error);
       }
-      if (fromDb.length > 0) {
-        setRows(fromDb);
-        return;
-      }
+      setRows(fromDb);
+      return;
     }
+
     setRows(loadStoredRows());
-  }, []);
+  }, [supabaseSource]);
 
   useEffect(() => {
     let cancelled = false;
@@ -65,9 +70,14 @@ export default function Dashboard() {
   };
 
   const clearData = async () => {
-    clearStoredRows();
-    if (!isDemoModeClient()) {
-      await deleteAllSpendData();
+    if (supabaseSource) {
+      const { error, schemaHint } = await deleteAllSpendData();
+      if (schemaHint || error) {
+        setSchemaError(schemaHint || error || "Could not clear database.");
+        return;
+      }
+    } else {
+      clearStoredRows();
     }
     setRows([]);
   };
@@ -89,6 +99,12 @@ export default function Dashboard() {
           }
         />
 
+        {schemaError && (
+          <div className="mb-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+            {schemaError}
+          </div>
+        )}
+
         {!ready ? (
           <div className="mt-8 flex min-h-[320px] items-center justify-center">
             <p className="text-sm text-slate-500">Loading…</p>
@@ -99,31 +115,48 @@ export default function Dashboard() {
               Spend intelligence
             </h1>
             <p className="mx-auto mt-3 max-w-md text-sm text-slate-600">
-              No data yet. Start with demo data or upload a CSV.
+              {supabaseSource
+                ? "No spend data in spend_transactions yet. Log in, import a CSV, and rows will load from Supabase."
+                : "No data yet. Start with demo data or upload a CSV (demo mode uses browser storage only)."}
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-              <button
-                type="button"
-                onClick={loadDemoData}
-                className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
-              >
-                Load demo data
-              </button>
+              {!supabaseSource && (
+                <button
+                  type="button"
+                  onClick={loadDemoData}
+                  className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                >
+                  Load demo data
+                </button>
+              )}
               <Link
-                href="/import"
+                href={supabaseSource ? "/login" : "/import"}
                 className="inline-flex rounded-xl border border-turquoise-200 bg-turquoise-50 px-5 py-2.5 text-sm font-semibold text-turquoise-900 transition hover:bg-turquoise-100"
               >
-                Import CSV
+                {supabaseSource ? "Log in" : "Import CSV"}
               </Link>
+              {supabaseSource && (
+                <Link
+                  href="/import"
+                  className="inline-flex rounded-xl bg-turquoise-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-turquoise-700"
+                >
+                  Import CSV
+                </Link>
+              )}
             </div>
           </div>
         ) : (
           <>
-            <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+              {supabaseSource && (
+                <p className="text-xs text-slate-500">
+                  Data source: Supabase spend_transactions
+                </p>
+              )}
               <button
                 type="button"
                 onClick={clearData}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+                className="ml-auto rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
               >
                 Clear data
               </button>

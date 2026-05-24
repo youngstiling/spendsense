@@ -1,29 +1,23 @@
 import { clearDemoRows } from "@/lib/config";
 import type { Row } from "@/lib/csv-shared";
-import { isDemoMode } from "@/lib/demo";
+import { usesSupabaseAsDataSource } from "@/lib/data-source";
+import { rowsFromSpendTransactions } from "@/lib/spend-transaction-db";
+import type { SpendTransactionDbRow } from "@/lib/supabase/schema";
 import {
-  rowsFromSpendTransactions,
+  schemaFixHint,
   SPEND_TRANSACTIONS_TABLE,
-  type SpendTransactionRecord,
-} from "@/lib/spend-transaction-db";
+  SPEND_TRANSACTION_SELECT,
+  SpendTxCol,
+} from "@/lib/supabase/schema";
 import { createClient } from "@/lib/supabase/client";
 
-const SPEND_TX_SELECT_FULL =
-  "date, supplier, canonical_supplier, category, amount, pub, description";
-
-/** Older DBs may only have core columns until fix-spend-transactions-schema.sql is run. */
-const SPEND_TX_SELECT_LEGACY = "date, supplier, category, amount";
-
-function isMissingColumnError(message: string): boolean {
-  return /column|does not exist|schema cache/i.test(message);
-}
-
-/** Load the signed-in user's rows from spend_transactions. */
+/** Load rows from spend_transactions (Supabase schema is source of truth). */
 export async function fetchSpendTransactions(): Promise<{
   rows: Row[];
   error?: string;
+  schemaHint?: string;
 }> {
-  if (isDemoMode()) {
+  if (!usesSupabaseAsDataSource()) {
     return { rows: [] };
   }
 
@@ -36,37 +30,30 @@ export async function fetchSpendTransactions(): Promise<{
     return { rows: [] };
   }
 
-  const full = await supabase
+  const { data, error } = await supabase
     .from(SPEND_TRANSACTIONS_TABLE)
-    .select(SPEND_TX_SELECT_FULL)
-    .eq("user_id", user.id)
-    .order("date", { ascending: true });
+    .select(SPEND_TRANSACTION_SELECT)
+    .eq(SpendTxCol.userId, user.id)
+    .order(SpendTxCol.date, { ascending: true });
 
-  let records: SpendTransactionRecord[] =
-    (full.data as SpendTransactionRecord[] | null) ?? [];
-  let fetchError = full.error;
-
-  if (fetchError && isMissingColumnError(fetchError.message)) {
-    const legacy = await supabase
-      .from(SPEND_TRANSACTIONS_TABLE)
-      .select(SPEND_TX_SELECT_LEGACY)
-      .eq("user_id", user.id)
-      .order("date", { ascending: true });
-    records = (legacy.data as SpendTransactionRecord[] | null) ?? [];
-    fetchError = legacy.error;
-  }
-
-  if (fetchError) {
-    return { rows: [], error: fetchError.message };
+  if (error) {
+    return {
+      rows: [],
+      error: error.message,
+      schemaHint: schemaFixHint(error.message),
+    };
   }
 
   return {
-    rows: rowsFromSpendTransactions(records),
+    rows: rowsFromSpendTransactions((data ?? []) as unknown as SpendTransactionDbRow[]),
   };
 }
 
-export async function deleteAllSpendData(): Promise<{ error?: string }> {
-  if (isDemoMode()) {
+export async function deleteAllSpendData(): Promise<{
+  error?: string;
+  schemaHint?: string;
+}> {
+  if (!usesSupabaseAsDataSource()) {
     clearDemoRows();
     return {};
   }
@@ -83,7 +70,11 @@ export async function deleteAllSpendData(): Promise<{ error?: string }> {
   const { error } = await supabase
     .from(SPEND_TRANSACTIONS_TABLE)
     .delete()
-    .eq("user_id", user.id);
+    .eq(SpendTxCol.userId, user.id);
 
-  return error ? { error: error.message } : {};
+  if (error) {
+    return { error: error.message, schemaHint: schemaFixHint(error.message) };
+  }
+
+  return {};
 }

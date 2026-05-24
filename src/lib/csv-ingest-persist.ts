@@ -13,6 +13,7 @@ import {
   SPEND_TRANSACTIONS_TABLE,
   toSpendTransactionInsert,
 } from "@/lib/spend-transaction-db";
+import { schemaFixHint } from "@/lib/supabase/schema";
 
 export type PersistIngestOptions = {
   filename: string;
@@ -28,7 +29,7 @@ export type PersistIngestResult = {
 
 /**
  * Insert cleaned rows into spend_transactions (demo localStorage or Supabase).
- * Existing dashboard load paths pick up new rows automatically.
+ * Non-demo imports write to spend_transactions (see src/lib/supabase/schema.ts).
  */
 export async function persistIngestedRows(
   rows: Row[],
@@ -102,23 +103,16 @@ export async function persistIngestedRows(
       toSpendTransactionInsert(r, user.id)
     );
 
-    let { error } = await supabase.from(SPEND_TRANSACTIONS_TABLE).insert(chunk);
-
-    if (
-      error &&
-      /canonical_supplier|column|does not exist|schema cache/i.test(error.message)
-    ) {
-      const legacyChunk = chunk.map(
-        ({ canonical_supplier: _c, pub: _p, description: _d, ...rest }) => rest
-      );
-      ({ error } = await supabase.from(SPEND_TRANSACTIONS_TABLE).insert(legacyChunk));
-    }
+    const { error } = await supabase.from(SPEND_TRANSACTIONS_TABLE).insert(chunk);
 
     if (error) {
+      const hint = schemaFixHint(error.message);
       return {
         ok: false,
         inserted,
-        error: `Insert failed at row ${i + 1}: ${error.message}`,
+        error: hint
+          ? `${hint} Original: ${error.message}`
+          : `Insert failed at row ${i + 1}: ${error.message}`,
       };
     }
     inserted += chunk.length;

@@ -3,5 +3,5 @@ import { createClient } from "@/lib/supabase/client";
 /** Browser Supabase client (use in client components). */
 export const supabase = createClient();
 
-/** Transactions table in Postgres (`spend_transactions`). */
-export const TRANSACTIONS_TABLE = "spend_transactions";
+/** @deprecated Use SPEND_TRANSACTIONS_TABLE from @/lib/supabase/schema */
+export { SPEND_TRANSACTIONS_TABLE as TRANSACTIONS_TABLE } from "@/lib/supabase/schema";

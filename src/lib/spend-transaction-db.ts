@@ -1,30 +1,25 @@
 import type { Row } from "@/lib/csv-shared";
+import {
+  SPEND_TRANSACTIONS_TABLE,
+  type SpendTransactionDbRow,
+  type SpendTransactionInsert,
+} from "@/lib/supabase/schema";
 import { consolidateSupplier } from "@/lib/supplier-consolidation";
 
-/** Supabase table name — not `transactions`. */
-export const SPEND_TRANSACTIONS_TABLE = "spend_transactions";
-
-export type SpendTransactionRecord = {
-  date: string;
-  supplier: string;
-  canonical_supplier?: string | null;
-  category: string;
-  amount: number | string;
-  pub?: string | null;
-  description?: string | null;
-};
+export { SPEND_TRANSACTIONS_TABLE };
+export type SpendTransactionRecord = SpendTransactionDbRow;
 
 export function canonicalSupplierForRow(row: Row): string {
   if (row.canonicalSupplier) return row.canonicalSupplier;
   return consolidateSupplier(row.supplierRaw ?? row.supplier).canonicalSupplier;
 }
 
-/** Map app Row to spend_transactions insert payload (snake_case). */
+/** Map app Row → spend_transactions insert (schema-aligned). */
 export function toSpendTransactionInsert(
   row: Row,
   userId: string,
   extra?: { import_batch_id?: string }
-) {
+): SpendTransactionInsert {
   return {
     user_id: userId,
     date: row.date,
@@ -39,7 +34,7 @@ export function toSpendTransactionInsert(
 }
 
 export function rowsFromSpendTransactions(
-  records: SpendTransactionRecord[]
+  records: SpendTransactionDbRow[]
 ): Row[] {
   return records.map((r) => {
     const supplier = String(r.supplier ?? "UNKNOWN");

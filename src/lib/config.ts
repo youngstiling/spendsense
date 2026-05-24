@@ -1,9 +1,12 @@
+/**
+ * Demo-only browser cache. Production source of truth is Supabase
+ * spend_transactions — see src/lib/supabase/schema.ts.
+ */
 import type { Row } from "./csv";
 import { isDemoMode } from "./demo";
 import { readJsonStorage } from "./safe-storage";
 
 export { isDemoMode };
-
 /** Client-safe demo check (respects env; localhost fallback only when unset). */
 export function isDemoModeClient(): boolean {
   if (process.env.NEXT_PUBLIC_DEMO_MODE === "true") return true;

@@ -7,8 +7,10 @@
 
 ## 2. Run the database schema
 
+**Source of truth:** `supabase/full-setup.sql` (mirrored in app code as `src/lib/supabase/schema.ts`).
+
 1. In Supabase: **SQL Editor** → **New query**.
-2. Open `supabase/schema.sql` from this repo, copy all of it, paste into the editor.
+2. Open `supabase/full-setup.sql` from this repo, copy all of it, paste into the editor.
 3. Click **Run**. You should see success (table `spend_transactions` + RLS policies).
 
 **Schema out of date (imports or dashboard fail on `canonical_supplier` / `pub`):** run **`supabase/fix-spend-transactions-schema.sql`** in the SQL Editor, then re-check:
