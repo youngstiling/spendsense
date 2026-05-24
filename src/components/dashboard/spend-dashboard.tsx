@@ -110,13 +110,15 @@ export function SpendDashboard({ enrichedData }: { enrichedData: Row[] }) {
         </div>
       </header>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
+      <section className="space-y-4">
         <KPICard
           label="Total spend"
           value={formatMoney(kpis.totalSpend)}
           sublabel={pubFilter === "all" ? "All pubs" : pubFilter}
           accent="teal"
+          featured
         />
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
         <KPICard
           label="Uncategorised"
           value={`${kpis.uncategorisedPercent.toFixed(1)}%`}
@@ -153,6 +155,7 @@ export function SpendDashboard({ enrichedData }: { enrichedData: Row[] }) {
           sublabel="Price inconsistency estimate"
           accent={kpis.potentialSavings > 0 ? "amber" : "teal"}
         />
+        </div>
       </section>
 
       <SpendCharts
