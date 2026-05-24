@@ -24,7 +24,11 @@
      ```
 3. Save.
 
-4. **Longer magic link time (optional):** **Authentication** → **Providers** → **Email** → increase **Email OTP expiration** (seconds). Examples: `3600` = 1 hour, `86400` = 24 hours.
+4. **Magic link valid for 24 hours (recommended):**
+   - Open [Authentication → Providers → Email](https://supabase.com/dashboard/project/iptblxxntgabuqdnrzvk/auth/providers?provider=Email)
+   - Find **Email OTP expiration** (or **OTP expiry**)
+   - Set to **`86400`** (seconds = 24 hours). Default is often `3600` (1 hour).
+   - Click **Save**
 
 On a work PC, use a **personal email** for the magic link if your work inbox blocks external links.
 

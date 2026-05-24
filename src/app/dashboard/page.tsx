@@ -128,7 +128,17 @@ export default function DashboardPage() {
     </div>
   );
 
-  if (loading) return shell(<p className="text-slate-600">Loading…</p>);
+  if (loading) {
+    return shell(
+      <div className="flex items-center gap-3 py-16">
+        <div
+          className="h-6 w-6 shrink-0 animate-spin rounded-full border-2 border-teal-600 border-t-transparent"
+          aria-hidden
+        />
+        <p className="text-base font-medium text-slate-600">Loading dashboard…</p>
+      </div>
+    );
+  }
   if (error) {
     return shell(
       <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">

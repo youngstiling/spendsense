@@ -1,23 +1,49 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { AuthScreen, AuthSpinner } from "@/components/auth-screen";
 import { magicLinkRedirectTo } from "@/lib/supabase/auth-redirect";
 import { supabase } from "@/lib/supabaseClient";
 
+type Status = "checking" | "idle" | "loading" | "sent" | "error";
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<"idle" | "loading" | "sent" | "error">(
-    "idle"
-  );
+  const [status, setStatus] = useState<Status>("checking");
   const [message, setMessage] = useState("");
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("error") === "auth") {
-      setStatus("error");
-      setMessage("Magic link expired or invalid. Request a new link below.");
-    }
+    const check = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        window.location.replace("/dashboard");
+        return;
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("error") === "auth") {
+        setStatus("error");
+        setMessage(
+          "That login link expired or was already used. Send a fresh link below."
+        );
+        return;
+      }
+
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+      if (!url || !key || key.length < 40) {
+        setStatus("error");
+        setMessage(
+          "Login is not configured on this deployment. Add Supabase env vars on Vercel and redeploy."
+        );
+        return;
+      }
+
+      setStatus("idle");
+    };
+
+    check();
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -39,51 +65,100 @@ export default function LoginPage() {
     }
 
     setStatus("sent");
-    setMessage("Check your email for the magic link, then open it to reach the dashboard.");
   }
 
-  return (
-    <main className="flex min-h-screen items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-lg border border-slate-200 p-8 shadow-sm">
-        <h1 className="text-2xl font-semibold text-slate-900">Login</h1>
-        <p className="mt-1 text-sm text-slate-500">Spend Intelligence</p>
+  function resetForm() {
+    setStatus("idle");
+    setMessage("");
+  }
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <div>
-            <label htmlFor="email" className="mb-1 block text-sm font-medium">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@company.com"
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-          </div>
+  if (status === "checking") {
+    return (
+      <AuthScreen title="Login">
+        <AuthSpinner label="Checking your session…" />
+      </AuthScreen>
+    );
+  }
+
+  if (status === "sent") {
+    return (
+      <AuthScreen title="Check your email">
+        <p className="text-sm text-slate-600">
+          We&apos;ve sent you a secure login link
+          {email ? (
+            <>
+              {" "}
+              to <span className="font-medium text-slate-800">{email}</span>
+            </>
+          ) : null}
+          . It can stay valid for up to 24 hours if configured in Supabase.
+        </p>
+        <div className="mt-6 flex flex-col gap-3">
+          <a
+            href="https://mail.google.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="rounded-md bg-teal-600 py-2.5 text-sm font-medium text-white hover:bg-teal-700"
+          >
+            Open Gmail
+          </a>
           <button
-            type="submit"
-            disabled={status === "loading"}
-            className="w-full rounded-md bg-teal-600 py-2 text-sm font-medium text-white hover:bg-teal-700 disabled:opacity-50"
+            type="button"
+            onClick={resetForm}
+            className="rounded-md border border-slate-300 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
           >
-            {status === "loading" ? "Sending…" : "Send Magic Link"}
+            Use different email
           </button>
-        </form>
-
-        {message && (
-          <p
-            className={`mt-4 text-sm ${status === "error" ? "text-red-600" : "text-teal-700"}`}
-          >
-            {message}
-          </p>
-        )}
-
-        <Link href="/" className="mt-6 block text-center text-sm text-slate-500 hover:text-slate-700">
+        </div>
+        <Link
+          href="/"
+          className="mt-6 inline-block text-sm text-slate-500 hover:text-slate-700"
+        >
           ← Back to home
         </Link>
-      </div>
-    </main>
+      </AuthScreen>
+    );
+  }
+
+  const buttonLabel = status === "loading" ? "Sending..." : "Send Magic Link";
+
+  return (
+    <AuthScreen title="Login">
+      <form onSubmit={handleSubmit} className="space-y-4 text-left">
+        <div>
+          <label htmlFor="email" className="mb-1 block text-sm font-medium text-slate-700">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@company.com"
+            disabled={status === "loading"}
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-60"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={status === "loading"}
+          className="w-full rounded-md bg-teal-600 py-2.5 text-sm font-medium text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {buttonLabel}
+        </button>
+      </form>
+
+      {message && status === "error" && (
+        <p className="mt-4 text-left text-sm text-red-600">{message}</p>
+      )}
+
+      <Link
+        href="/"
+        className="mt-6 inline-block text-sm text-slate-500 hover:text-slate-700"
+      >
+        ← Back to home
+      </Link>
+    </AuthScreen>
   );
 }
