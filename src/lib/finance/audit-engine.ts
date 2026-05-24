@@ -1,3 +1,4 @@
+import type { SpendTransaction } from "@/lib/supabase/schema";
 import type { Transaction } from "./types";
 
 export type AuditSource = "SQL" | "ENGINE";
@@ -48,14 +49,16 @@ export function createAuditEntry(
 }
 
 /** Engine path: sum parsed transaction amounts. */
-export function getEngineTotalSpend(data: Transaction[]): number {
+export function getEngineTotalSpend(
+  data: SpendTransaction[] | Transaction[]
+): number {
   return data.reduce((sum, row) => sum + Number(row.amount) || 0, 0);
 }
 
 export function buildAuditLog(
   sqlTotal: number,
   sqlRowCount: number,
-  transactions: Transaction[]
+  transactions: SpendTransaction[] | Transaction[]
 ): AuditEntry[] {
   const engineTotal = getEngineTotalSpend(transactions);
 
@@ -111,7 +114,7 @@ export function trustScore(drift: DriftResult): number {
 export function runAuditReport(
   sqlTotal: number,
   sqlRowCount: number,
-  transactions: Transaction[]
+  transactions: SpendTransaction[] | Transaction[]
 ): AuditReport {
   const entries = buildAuditLog(sqlTotal, sqlRowCount, transactions);
   const drift = checkDrift(entries);

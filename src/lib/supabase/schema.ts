@@ -18,6 +18,7 @@ export const SpendTxCol = {
   canonicalSupplier: "canonical_supplier",
   category: "category",
   amount: "amount",
+  /** Venue/site — stored as `pub` in Postgres; exposed as `pub_name` on SpendTransaction */
   pub: "pub",
   description: "description",
   importBatchId: "import_batch_id",
@@ -45,17 +46,82 @@ export const SPEND_TRANSACTION_SELECT_LEGACY = [
   SpendTxCol.amount,
 ].join(", ");
 
-/** Row shape returned from spend_transactions (client-readable fields). */
+/** Canonical app/domain row. DB column for venue is `pub` (mapped to pub_name). */
+export type SpendTransaction = {
+  id: string;
+  pub_name: string;
+  date: string;
+  supplier: string;
+  canonical_supplier: string;
+  category: string;
+  amount: number;
+};
+
+/** Row shape returned from spend_transactions (PostgREST, snake_case). */
 export type SpendTransactionDbRow = {
+  id?: string;
   date: string;
   supplier: string;
   canonical_supplier: string;
   category: string;
   amount: number | string;
+  /** Postgres column name */
   pub?: string | null;
+  /** Optional alias if present in API payloads */
+  pub_name?: string | null;
   description?: string | null;
   import_batch_id?: string | null;
 };
+
+/** Select including id (audit, reconciliation). */
+export const SPEND_TRANSACTION_SELECT_FULL = [
+  SpendTxCol.id,
+  SpendTxCol.date,
+  SpendTxCol.supplier,
+  SpendTxCol.canonicalSupplier,
+  SpendTxCol.category,
+  SpendTxCol.amount,
+  SpendTxCol.pub,
+  SpendTxCol.description,
+  SpendTxCol.importBatchId,
+].join(", ");
+
+/** Map DB row → SpendTransaction (pub → pub_name). */
+export function spendTransactionFromDbRow(
+  row: SpendTransactionDbRow
+): SpendTransaction {
+  const supplier = String(row.supplier ?? "");
+  return {
+    id: String(row.id ?? ""),
+    pub_name:
+      String(row.pub_name ?? row.pub ?? "Unknown").trim() || "Unknown",
+    date: String(row.date ?? ""),
+    supplier,
+    canonical_supplier:
+      String(row.canonical_supplier ?? supplier).trim() || supplier,
+    category: String(row.category ?? "uncategorised").trim() || "uncategorised",
+    amount: Number(row.amount) || 0,
+  };
+}
+
+/** Map SpendTransaction → insert payload (pub_name → pub). */
+export function spendTransactionToInsert(
+  tx: SpendTransaction,
+  userId: string,
+  extra?: { import_batch_id?: string; description?: string | null }
+): SpendTransactionInsert {
+  return {
+    user_id: userId,
+    date: tx.date,
+    supplier: tx.supplier,
+    canonical_supplier: tx.canonical_supplier,
+    category: tx.category,
+    amount: tx.amount,
+    pub: tx.pub_name?.trim() || null,
+    description: extra?.description ?? null,
+    import_batch_id: extra?.import_batch_id,
+  };
+}
 
 /** Client insert payload (server sets id, created_at; auth sets user_id). */
 export type SpendTransactionInsert = {

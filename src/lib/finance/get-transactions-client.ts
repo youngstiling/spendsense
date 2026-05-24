@@ -1,18 +1,28 @@
 import { loadStoredRows } from "@/lib/config";
+import type { Row } from "@/lib/csv-shared";
 import { usesSupabaseAsDataSourceClient } from "@/lib/data-source";
 import { fetchSpendTransactions } from "@/lib/spend-data";
-import { rowsToTransactions } from "./parse-transactions";
+import {
+  rowsToSpendTransactions,
+  spendTransactionsToEngineRows,
+} from "./parse-transactions";
+import type { SpendTransaction } from "@/lib/supabase/schema";
 import type { Transaction } from "./types";
 
-/** Client: Supabase + localStorage fallback. */
-export async function getTransactionsClient(): Promise<Transaction[]> {
+/** Primary client fetch — canonical SpendTransaction[]. */
+export async function getSpendTransactionsClient(): Promise<SpendTransaction[]> {
   if (typeof window === "undefined") return [];
 
   if (usesSupabaseAsDataSourceClient()) {
     const { rows } = await fetchSpendTransactions();
     const raw = rows.length > 0 ? rows : loadStoredRows();
-    return rowsToTransactions(raw);
+    return rowsToSpendTransactions(raw);
   }
 
-  return rowsToTransactions(loadStoredRows());
+  return rowsToSpendTransactions(loadStoredRows());
+}
+
+/** Engine pipeline (Date + pubName). */
+export async function getTransactionsClient(): Promise<Transaction[]> {
+  return spendTransactionsToEngineRows(await getSpendTransactionsClient());
 }

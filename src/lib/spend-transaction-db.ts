@@ -1,13 +1,22 @@
 import type { Row } from "@/lib/csv-shared";
 import {
   SPEND_TRANSACTIONS_TABLE,
+  spendTransactionFromDbRow,
+  type SpendTransaction,
   type SpendTransactionDbRow,
   type SpendTransactionInsert,
 } from "@/lib/supabase/schema";
 import { consolidateSupplier } from "@/lib/supplier-consolidation";
 
-export { SPEND_TRANSACTIONS_TABLE };
+export { SPEND_TRANSACTIONS_TABLE, spendTransactionFromDbRow };
+export type { SpendTransaction };
 export type SpendTransactionRecord = SpendTransactionDbRow;
+
+export function spendTransactionsFromDbRows(
+  records: SpendTransactionDbRow[]
+): SpendTransaction[] {
+  return records.map(spendTransactionFromDbRow);
+}
 
 export function canonicalSupplierForRow(row: Row): string {
   if (row.canonicalSupplier) return row.canonicalSupplier;
@@ -49,7 +58,7 @@ export function rowsFromSpendTransactions(
       canonicalSupplier: canonical,
       category: String(r.category ?? ""),
       amount: Number(r.amount) || 0,
-      pub: r.pub ?? undefined,
+      pub: r.pub ?? r.pub_name ?? undefined,
       description: r.description ?? undefined,
     };
   });

@@ -10,7 +10,8 @@ import {
   type ReactNode,
 } from "react";
 import { loadQuickDemoRows, replaceDemoRows } from "@/lib/config";
-import { getTransactionsClient } from "@/lib/finance/get-transactions-client";
+import { getSpendTransactionsClient } from "@/lib/finance/get-transactions-client";
+import { spendTransactionsToEngineRows } from "@/lib/finance/parse-transactions";
 import { runAuditReport } from "@/lib/finance/audit-engine";
 import type { AuditReport } from "@/lib/finance/audit-engine";
 import { runFinancialEngine } from "@/lib/finance/run-financial-engine";
@@ -42,8 +43,9 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
 
   const refresh = useCallback(async () => {
     setLoading(true);
-    const txs = await getTransactionsClient();
-    setTransactionCount(txs.length);
+    const spendRows = await getSpendTransactionsClient();
+    const txs = spendTransactionsToEngineRows(spendRows);
+    setTransactionCount(spendRows.length);
     setEngine(txs.length ? runFinancialEngine(txs) : null);
 
     let auditReport: AuditReport | null = null;
@@ -57,16 +59,16 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
           auditReport = runAuditReport(
             json.sql.total,
             json.sql.rowCount,
-            txs
+            spendRows
           );
-        } else if (txs.length) {
-          auditReport = runAuditReport(0, 0, txs);
+        } else if (spendRows.length) {
+          auditReport = runAuditReport(0, 0, spendRows);
         }
-      } else if (txs.length) {
-        auditReport = runAuditReport(0, 0, txs);
+      } else if (spendRows.length) {
+        auditReport = runAuditReport(0, 0, spendRows);
       }
     } catch {
-      if (txs.length) auditReport = runAuditReport(0, 0, txs);
+      if (spendRows.length) auditReport = runAuditReport(0, 0, spendRows);
     }
     setAudit(auditReport);
 
@@ -77,8 +79,10 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const fetchAiInsights = useCallback(async () => {
     setAiLoading(true);
     try {
-      const txs = await getTransactionsClient();
-      const eng = txs.length ? runFinancialEngine(txs) : null;
+      const spendRows = await getSpendTransactionsClient();
+      const eng = spendRows.length
+        ? runFinancialEngine(spendTransactionsToEngineRows(spendRows))
+        : null;
       if (!eng) {
         setAiInsights([]);
         return;
