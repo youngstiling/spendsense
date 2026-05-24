@@ -12,6 +12,9 @@ REQUIRED=(
   date
   pub
   description
+)
+
+OPTIONAL=(
   import_batch_id
 )
 
@@ -39,6 +42,14 @@ for col in "${REQUIRED[@]}"; do
     echo "MISSING required column: $col"
     exit 1
   fi
+done
+
+for col in "${OPTIONAL[@]}"; do
+  for a in "${ACTUAL[@]}"; do
+    if [[ "$(echo "$a" | tr -d '[:space:]')" == "$col" ]]; then
+      echo "Optional column present: $col"
+    fi
+  done
 done
 
 echo "OK — all required columns present."

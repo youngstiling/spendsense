@@ -1,5 +1,6 @@
 -- Run once in Supabase SQL Editor — repairs spend_transactions for SpendSense app
 -- Safe to re-run (uses IF NOT EXISTS)
+-- Matches: src/lib/supabase/schema.ts + supabase/migrations/
 
 -- Supplier consolidation
 alter table spend_transactions
@@ -15,13 +16,14 @@ alter table spend_transactions
 create index if not exists spend_transactions_canonical_supplier_idx
   on spend_transactions(canonical_supplier);
 
--- Venue / line detail (dashboard + imports)
+-- Venue / line detail
 alter table spend_transactions
   add column if not exists pub text,
   add column if not exists description text;
 
--- Verify (should list supplier + canonical_supplier)
--- select table_schema, table_name, column_name
--- from information_schema.columns
--- where table_name = 'spend_transactions'
---   and column_name ilike '%supplier%';
+-- Import batch link (no FK if csv_import_jobs not created yet)
+alter table spend_transactions
+  add column if not exists import_batch_id uuid;
+
+create index if not exists spend_transactions_import_batch_id_idx
+  on spend_transactions(import_batch_id);
