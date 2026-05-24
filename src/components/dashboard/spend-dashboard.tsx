@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { format, parseISO } from "date-fns";
 import { useMemo, useState } from "react";
 import { generateInsights } from "@/lib/brand-category";
 import type { Row } from "@/lib/csv";
@@ -11,6 +12,7 @@ import {
   computeSpendByMonth,
   computeSpendByPub,
   computeSpendTrendByDate,
+  computeWeeklySpendTrend,
   computeSpendBySupplier,
   filterRowsByPub,
   listPubNames,
@@ -85,6 +87,7 @@ export function SpendDashboard({ enrichedData }: { enrichedData: Row[] }) {
   );
 
   const spendTrend = useMemo(() => computeSpendTrendByDate(scoped), [scoped]);
+  const weeklyTrend = useMemo(() => computeWeeklySpendTrend(scoped), [scoped]);
 
   return (
     <div className="space-y-8">
@@ -180,6 +183,19 @@ export function SpendDashboard({ enrichedData }: { enrichedData: Row[] }) {
       <BeerVsFoodPanel comparison={beerVsFood} />
 
       <SpendTrendPanel summary={spendTrend} />
+
+      <SpendTrendPanel
+        summary={weeklyTrend}
+        title="Weekly spend"
+        subtitle="Monday-start weeks — first vs last week in view"
+        formatLabel={(week) => {
+          try {
+            return `w/c ${format(parseISO(week), "d MMM")}`;
+          } catch {
+            return week;
+          }
+        }}
+      />
 
       <SpendCharts
         pubData={pubData}

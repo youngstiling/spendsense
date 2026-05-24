@@ -6,12 +6,14 @@ import { AppNav } from "@/components/app-nav";
 import { SpendDashboard } from "@/components/dashboard/spend-dashboard";
 import {
   clearStoredRows,
+  isDemoModeClient,
   loadQuickDemoRows,
   loadStoredRows,
   replaceDemoRows,
 } from "@/lib/config";
 import { enrichTransactions } from "@/lib/brand-category";
 import type { Row } from "@/lib/csv";
+import { deleteAllSpendData, fetchSpendTransactions } from "@/lib/spend-data";
 
 function enrichLoaded(rows: Row[]): Row[] {
   if (!rows.length) return [];
@@ -31,14 +33,30 @@ export default function Dashboard() {
   const [rows, setRows] = useState<Row[]>([]);
   const [ready, setReady] = useState(false);
 
-  const refreshFromStorage = useCallback(() => {
+  const refreshData = useCallback(async () => {
+    if (!isDemoModeClient()) {
+      const { rows: fromDb, error } = await fetchSpendTransactions();
+      if (error) {
+        console.warn("[dashboard] spend_transactions:", error);
+      }
+      if (fromDb.length > 0) {
+        setRows(fromDb);
+        return;
+      }
+    }
     setRows(loadStoredRows());
   }, []);
 
   useEffect(() => {
-    refreshFromStorage();
-    setReady(true);
-  }, [refreshFromStorage]);
+    let cancelled = false;
+    (async () => {
+      await refreshData();
+      if (!cancelled) setReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [refreshData]);
 
   const loadDemoData = () => {
     const demo = loadQuickDemoRows();
@@ -46,8 +64,11 @@ export default function Dashboard() {
     setRows(demo);
   };
 
-  const clearData = () => {
+  const clearData = async () => {
     clearStoredRows();
+    if (!isDemoModeClient()) {
+      await deleteAllSpendData();
+    }
     setRows([]);
   };
 

@@ -1,3 +1,4 @@
+import { format, isValid, parseISO, startOfWeek } from "date-fns";
 import { pubsAboveAverageSpend, topPubBySpend } from "@/lib/pub-summary";
 import { calculateSavingsOpportunity } from "@/lib/savings-opportunity";
 import { sumAmount } from "@/lib/sum-amount";
@@ -67,6 +68,8 @@ export type SpendTrendSummary = {
   trendLabel: string;
 };
 
+export type WeeklySpendPoint = { week: string; total: number };
+
 function sortTrendDates(a: SpendTrendPoint, b: SpendTrendPoint): number {
   if (a.date === "Unknown" || b.date === "Unknown") {
     return a.date.localeCompare(b.date);
@@ -74,20 +77,17 @@ function sortTrendDates(a: SpendTrendPoint, b: SpendTrendPoint): number {
   return new Date(a.date).getTime() - new Date(b.date).getTime();
 }
 
-/** Group spend by transaction date; compare first vs last day for trend. */
-export function computeSpendTrendByDate(
-  rows: InsightRow[]
+function parseTransactionDate(dateStr: string | undefined): Date | null {
+  const raw = dateStr?.trim();
+  if (!raw || raw === "Unknown") return null;
+  const iso = raw.length >= 10 ? raw.slice(0, 10) : raw;
+  const parsed = parseISO(iso);
+  return isValid(parsed) ? parsed : null;
+}
+
+function buildSpendTrendSummary(
+  trendData: SpendTrendPoint[]
 ): SpendTrendSummary | null {
-  const trendDataMap = rows.reduce<Record<string, number>>((acc, t) => {
-    const date = t.date?.trim() || "Unknown";
-    acc[date] = (acc[date] ?? 0) + t.amount;
-    return acc;
-  }, {});
-
-  const trendData = Object.entries(trendDataMap)
-    .map(([date, total]) => ({ date, total }))
-    .sort(sortTrendDates);
-
   if (!trendData.length) return null;
 
   let trendInsight: SpendTrendSummary["trendInsight"] = "Stable";
@@ -106,6 +106,53 @@ export function computeSpendTrendByDate(
   }
 
   return { trendData, trendInsight, trendLabel };
+}
+
+/** Group spend by calendar week (Monday start). */
+export function groupByWeek(data: InsightRow[]): WeeklySpendPoint[] {
+  const acc: Record<string, number> = {};
+
+  for (const t of data) {
+    const parsed = parseTransactionDate(t.date);
+    if (!parsed) continue;
+
+    const weekStart = startOfWeek(parsed, { weekStartsOn: 1 });
+    const week = format(weekStart, "yyyy-MM-dd");
+    acc[week] = (acc[week] ?? 0) + t.amount;
+  }
+
+  return Object.entries(acc)
+    .map(([week, total]) => ({ week, total }))
+    .sort((a, b) => a.week.localeCompare(b.week));
+}
+
+/** Weekly spend trend with first-vs-last week insight. */
+export function computeWeeklySpendTrend(
+  rows: InsightRow[]
+): SpendTrendSummary | null {
+  const weeklySpend = groupByWeek(rows);
+  const trendData = weeklySpend.map(({ week, total }) => ({
+    date: week,
+    total,
+  }));
+  return buildSpendTrendSummary(trendData);
+}
+
+/** Group spend by transaction date; compare first vs last day for trend. */
+export function computeSpendTrendByDate(
+  rows: InsightRow[]
+): SpendTrendSummary | null {
+  const trendDataMap = rows.reduce<Record<string, number>>((acc, t) => {
+    const date = t.date?.trim() || "Unknown";
+    acc[date] = (acc[date] ?? 0) + t.amount;
+    return acc;
+  }, {});
+
+  const trendData = Object.entries(trendDataMap)
+    .map(([date, total]) => ({ date, total }))
+    .sort(sortTrendDates);
+
+  return buildSpendTrendSummary(trendData);
 }
 
 export function computeSpendBySupplier(rows: InsightRow[]): ChartDatum[] {
