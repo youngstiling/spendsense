@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { magicLinkRedirectTo } from "@/lib/supabase/auth-redirect";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -9,6 +10,16 @@ export default function LoginPage() {
     "idle"
   );
   const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("error") === "auth") {
+      setStatus("error");
+      setMessage(
+        "Sign-in link expired or could not be verified. Request a new link below. If this keeps happening, ask your admin to add this site URL in Supabase → Authentication → URL Configuration."
+      );
+    }
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -19,7 +30,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: magicLinkRedirectTo(window.location.origin),
       },
     });
 
@@ -42,7 +53,7 @@ export default function LoginPage() {
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: magicLinkRedirectTo(window.location.origin),
       },
     });
     setStatus(error ? "error" : "sent");

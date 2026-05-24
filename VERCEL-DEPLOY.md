@@ -67,19 +67,17 @@ After adding or changing env vars, **redeploy** (Deployments ? ? ? Redeploy).
 
 ## 4. Supabase auth URLs (after first deploy)
 
-Once you have your Vercel URL (e.g. `https://spendsense-abc123.vercel.app`):
+Once you have your Vercel URL (production: `https://spendsense-wine-five.vercel.app`):
 
 1. Supabase ? **Authentication** ? **URL Configuration**.
-2. **Site URL:** `https://spendsense-abc123.vercel.app`
+2. **Site URL:** `https://spendsense-wine-five.vercel.app`
 3. **Redirect URLs** � add:
    ```
-   https://spendsense-abc123.vercel.app/auth/callback
-   ```
-4. Keep localhost URLs too if you still develop locally:
-   ```
+   https://spendsense-wine-five.vercel.app/auth/callback
+   https://*-youngstiling.vercel.app/auth/callback
    http://localhost:3000/auth/callback
    ```
-5. **Save**.
+4. **Save**. Optional Vercel env: `NEXT_PUBLIC_SITE_URL=https://spendsense-wine-five.vercel.app`
 
 Email provider should stay enabled (**Authentication ? Providers ? Email**).
 

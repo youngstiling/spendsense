@@ -15,10 +15,12 @@
 
 1. **Authentication** → **Providers** → ensure **Email** is enabled.
 2. **Authentication** → **URL Configuration**:
-   - **Site URL:** `http://localhost:3000`
+   - **Site URL (local):** `http://localhost:3000`
    - **Redirect URLs** — add:
      ```
      http://localhost:3000/auth/callback
+     https://spendsense-wine-five.vercel.app/auth/callback
+     https://*-youngstiling.vercel.app/auth/callback
      ```
 3. Save.
 
