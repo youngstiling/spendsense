@@ -1,157 +1,37 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { AppNav } from "@/components/app-nav";
 import { SpendDashboard } from "@/components/dashboard/spend-dashboard";
+import { loadDemoRows } from "@/lib/config";
 import { enrichTransactions } from "@/lib/brand-category";
 import type { Row } from "@/lib/csv";
 
-/** Always-available demo portfolio — used if anything else fails. */
-const FALLBACK_DEMO_ROWS: Row[] = [
-  {
-    date: "2026-01-15",
-    pub: "Red Lion - Glasgow",
-    supplier: "Diageo Ltd",
-    description: "Premium lager and wine delivery",
-    category: "Drinks",
-    amount: 1245.5,
-  },
-  {
-    date: "2026-01-16",
-    pub: "Kings Arms - Edinburgh",
-    supplier: "BOOKER",
-    description: "Weekly food and meat order",
-    category: "Food",
-    amount: 842.1,
-  },
-  {
-    date: "2026-01-17",
-    pub: "The Crown - Stirling",
-    supplier: "Heineken UK Ltd",
-    description: "Beer kegs restock",
-    category: "Drinks",
-    amount: 978.33,
-  },
-  {
-    date: "2026-01-18",
-    pub: "Black Bull - Dundee",
-    supplier: "CleanCo",
-    description: "Pub cleaning supplies",
-    category: "Cleaning",
-    amount: 156.0,
-  },
-  {
-    date: "2026-01-19",
-    pub: "Queens Head - Aberdeen",
-    supplier: "E.ON",
-    description: "Business energy bill",
-    category: "Utilities",
-    amount: 412.8,
-  },
-  {
-    date: "2026-01-20",
-    pub: "Red Lion - Glasgow",
-    supplier: "Coca-Cola Europacific",
-    description: "Soft drinks delivery",
-    category: "Drinks",
-    amount: 389.2,
-  },
-  {
-    date: "2026-01-21",
-    pub: "Kings Arms - Edinburgh",
-    supplier: "Brakes",
-    description: "Fresh produce and dairy",
-    category: "Food",
-    amount: 1105.75,
-  },
-  {
-    date: "2026-01-22",
-    pub: "The Crown - Stirling",
-    supplier: "Molson Coors",
-    description: "Keg beer order",
-    category: "Drinks",
-    amount: 756.4,
-  },
-  {
-    date: "2026-01-23",
-    pub: "Black Bull - Dundee",
-    supplier: "Sysco",
-    description: "Kitchen consumables",
-    category: "Food",
-    amount: 623.9,
-  },
-  {
-    date: "2026-01-24",
-    pub: "Queens Head - Aberdeen",
-    supplier: "Scottish Power",
-    description: "Electricity",
-    category: "Utilities",
-    amount: 298.5,
-  },
-  {
-    date: "2026-01-25",
-    pub: "Red Lion - Glasgow",
-    supplier: "Biffa",
-    description: "Waste collection",
-    category: "Cleaning",
-    amount: 187.0,
-  },
-  {
-    date: "2026-01-26",
-    pub: "Kings Arms - Edinburgh",
-    supplier: "Matthew Clark",
-    description: "Wine and spirits",
-    category: "Drinks",
-    amount: 1432.6,
-  },
-  {
-    date: "2026-01-27",
-    pub: "The Crown - Stirling",
-    supplier: "Bidfood",
-    description: "Frozen food delivery",
-    category: "Food",
-    amount: 891.25,
-  },
-  {
-    date: "2026-01-28",
-    pub: "Black Bull - Dundee",
-    supplier: "Unknown Supplier Ltd",
-    description: "Miscellaneous supplies",
-    category: "",
-    amount: 245.0,
-  },
-  {
-    date: "2026-01-29",
-    pub: "Queens Head - Aberdeen",
-    supplier: "Heineken UK Ltd",
-    description: "Draught beer",
-    category: "Drinks",
-    amount: 534.8,
-  },
-];
-
-function safeEnrich(rows: Row[]): Row[] {
-  const source = rows.length ? rows : FALLBACK_DEMO_ROWS;
+function enrichLoaded(rows: Row[]): Row[] {
+  if (!rows.length) return [];
   try {
-    const enriched = enrichTransactions(source);
-    return enriched.length ? enriched : enrichTransactions(FALLBACK_DEMO_ROWS);
+    return enrichTransactions(rows);
   } catch {
-    try {
-      return enrichTransactions(FALLBACK_DEMO_ROWS);
-    } catch {
-      return FALLBACK_DEMO_ROWS.map((r) => ({
-        ...r,
-        month: r.date.slice(0, 7),
-        pub: r.pub ?? "Unknown",
-        canonicalSupplier: r.supplier,
-      }));
-    }
+    return rows.map((r) => ({
+      ...r,
+      month: r.date.slice(0, 7),
+      pub: r.pub ?? "Unknown",
+      canonicalSupplier: r.supplier,
+    }));
   }
 }
 
 export default function Dashboard() {
-  const enrichedData = useMemo(() => safeEnrich(FALLBACK_DEMO_ROWS), []);
+  const [rows, setRows] = useState<Row[]>([]);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    setRows(loadDemoRows());
+    setReady(true);
+  }, []);
+
+  const enrichedData = useMemo(() => enrichLoaded(rows), [rows]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-100 via-slate-50 to-white">
@@ -167,11 +47,28 @@ export default function Dashboard() {
             </Link>
           }
         />
-        <div className="mb-6 rounded-xl border border-amber-200/80 bg-amber-50 px-4 py-2.5 text-sm text-amber-950">
-          Demo data — no login required. Charts and KPIs always load from sample
-          spend.
-        </div>
-        <SpendDashboard enrichedData={enrichedData} />
+
+        {!ready ? (
+          <div className="mt-8 flex min-h-[320px] items-center justify-center">
+            <p className="text-sm text-slate-500">Loading…</p>
+          </div>
+        ) : enrichedData.length === 0 ? (
+          <div className="mt-8 rounded-2xl border border-slate-200/80 bg-white p-12 text-center shadow-sm">
+            <h2 className="text-xl font-semibold text-slate-900">No spend data yet</h2>
+            <p className="mx-auto mt-2 max-w-md text-sm text-slate-600">
+              Import a CSV to see totals, charts, and savings insights. Nothing is
+              pre-loaded — your numbers appear after you upload.
+            </p>
+            <Link
+              href="/import"
+              className="mt-6 inline-flex rounded-xl bg-teal-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-teal-700"
+            >
+              Import CSV
+            </Link>
+          </div>
+        ) : (
+          <SpendDashboard enrichedData={enrichedData} />
+        )}
       </div>
     </div>
   );
