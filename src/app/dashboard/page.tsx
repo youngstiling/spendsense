@@ -38,6 +38,7 @@ export default function DashboardPage() {
       if (!parsed.length) throw new Error("Sample file had no valid rows.");
       replaceDemoRows(parsed);
       setData(loadDemoRows());
+      setError(false);
     } catch (err) {
       console.error("DATA ERROR:", err);
       setError(true);
@@ -127,26 +128,49 @@ export default function DashboardPage() {
     </div>
   );
 
-  if (loading) return shell(<p>Loading...</p>);
-  if (error) return shell(<p>Something went wrong</p>);
-  if (!data.length) {
+  if (loading) return shell(<p className="text-slate-600">Loading…</p>);
+  if (error) {
     return shell(
-      <>
-        <p>No data</p>
+      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        Something went wrong loading your data.{" "}
         {demo && (
           <button
             type="button"
             onClick={loadSampleData}
-            disabled={loadingSample}
-            className="mt-4 rounded-lg border border-teal-600 px-4 py-2 text-sm text-teal-700 disabled:opacity-50"
+            className="ml-1 font-medium text-red-900 underline"
           >
-            {loadingSample ? "Loading…" : "Load sample data"}
+            Try sample data
           </button>
         )}
-        <Link href="/import" className="mt-4 ml-3 inline-block text-sm text-teal-700 underline">
-          Import CSV
-        </Link>
-      </>
+      </div>
+    );
+  }
+  if (!data.length) {
+    return shell(
+      <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
+        <p className="text-lg font-medium text-slate-800">No spend data yet</p>
+        <p className="mt-2 text-sm text-slate-500">
+          Import a CSV to see KPIs, charts, and insights.
+        </p>
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+          {demo && (
+            <button
+              type="button"
+              onClick={loadSampleData}
+              disabled={loadingSample}
+              className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
+            >
+              {loadingSample ? "Loading…" : "Load sample data"}
+            </button>
+          )}
+          <Link
+            href="/import"
+            className="rounded-lg border border-teal-600 px-4 py-2 text-sm font-semibold text-teal-700 hover:bg-teal-50"
+          >
+            Import CSV
+          </Link>
+        </div>
+      </div>
     );
   }
 
