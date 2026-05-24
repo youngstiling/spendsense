@@ -15,18 +15,18 @@ import type { ChartDatum } from "@/lib/dashboard-analytics";
 import { formatMoney, formatMoneyPrecise } from "./format";
 
 const CATEGORY_COLORS = [
-  "#0d9488",
   "#0891b2",
+  "#06b6d4",
   "#6366f1",
   "#8b5cf6",
   "#f59e0b",
   "#ec4899",
-  "#14b8a6",
+  "#22d3ee",
   "#64748b",
 ];
 
 const PUB_BAR_DEFAULT = "#94a3b8";
-const PUB_BAR_HIGHLIGHT = "#0d9488";
+const PUB_BAR_HIGHLIGHT = "#0891b2";
 
 function moneyTooltip(value: number | string) {
   const n = typeof value === "number" ? value : Number(value);
@@ -44,7 +44,7 @@ export function SpendCharts({
 }: {
   pubData: ChartDatum[];
   categoryData: ChartDatum[];
-  /** Matches KPI “top pub” — that bar is highlighted in teal. */
+  /** Matches KPI “top pub” — that bar is highlighted in turquoise. */
   topPubName?: string;
 }) {
   const pubChart = pubData;

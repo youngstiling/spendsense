@@ -14,9 +14,9 @@ const toneStyles = {
     dot: "bg-amber-400",
   },
   info: {
-    card: "border-teal-200/80 bg-gradient-to-r from-teal-50/80 to-white",
-    icon: "bg-teal-100 text-teal-800",
-    dot: "bg-teal-500",
+    card: "border-turquoise-200/80 bg-gradient-to-r from-turquoise-50/80 to-white",
+    icon: "bg-turquoise-100 text-turquoise-800",
+    dot: "bg-turquoise-500",
   },
   neutral: {
     card: "border-slate-200 bg-white",
@@ -60,7 +60,7 @@ export function InsightsPanel({ insights }: { insights: string[] }) {
     <section className="rounded-2xl border border-slate-200/80 bg-slate-900 p-6 shadow-lg sm:p-8">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-widest text-teal-300">
+          <p className="text-xs font-semibold uppercase tracking-widest text-turquoise-300">
             Intelligence
           </p>
           <h2 className="mt-1 text-xl font-semibold text-white sm:text-2xl">

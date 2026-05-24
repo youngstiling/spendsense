@@ -68,7 +68,7 @@ export function ColumnMapperUi({
             onClick={() => setAmountSource("column")}
             className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
               amountSource === "column"
-                ? "bg-teal-600 text-white"
+                ? "bg-turquoise-600 text-white"
                 : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
             }`}
           >
@@ -79,7 +79,7 @@ export function ColumnMapperUi({
             onClick={() => setAmountSource("debit_credit")}
             className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
               amountSource === "debit_credit"
-                ? "bg-teal-600 text-white"
+                ? "bg-turquoise-600 text-white"
                 : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
             }`}
           >
@@ -133,7 +133,7 @@ export function ColumnMapperUi({
                     [field.key]: e.target.value || undefined,
                   })
                 }
-                className={`flex-1 rounded-lg border bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/30 ${
+                className={`flex-1 rounded-lg border bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-turquoise-500/30 ${
                   status === "missing"
                     ? "border-red-300"
                     : status === "auto"
@@ -198,7 +198,7 @@ export function ColumnMapperUi({
                         [key]: e.target.value || undefined,
                       })
                     }
-                    className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/30"
+                    className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-turquoise-500/30"
                   >
                     {options.map((h) => (
                       <option key={h || "__skip"} value={h}>

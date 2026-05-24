@@ -98,7 +98,7 @@ export default function LoginPage() {
             href="https://mail.google.com"
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-md bg-teal-600 py-2.5 text-sm font-medium text-white hover:bg-teal-700"
+            className="rounded-md bg-turquoise-600 py-2.5 text-sm font-medium text-white hover:bg-turquoise-700"
           >
             Open Gmail
           </a>
@@ -137,13 +137,13 @@ export default function LoginPage() {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@company.com"
             disabled={status === "loading"}
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:opacity-60"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-turquoise-500 disabled:opacity-60"
           />
         </div>
         <button
           type="submit"
           disabled={status === "loading"}
-          className="w-full rounded-md bg-teal-600 py-2.5 text-sm font-medium text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="w-full rounded-md bg-turquoise-600 py-2.5 text-sm font-medium text-white hover:bg-turquoise-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {buttonLabel}
         </button>

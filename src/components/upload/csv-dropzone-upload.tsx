@@ -110,8 +110,8 @@ export function CsvDropzoneUpload() {
         onClick={() => inputRef.current?.click()}
         className={`rounded-xl border-2 border-dashed p-10 text-center cursor-pointer transition-colors ${
           isDragging
-            ? "border-teal-500 bg-teal-50"
-            : "border-slate-200 bg-slate-50 hover:border-teal-400 hover:bg-teal-50/50"
+            ? "border-turquoise-500 bg-turquoise-50"
+            : "border-slate-200 bg-slate-50 hover:border-turquoise-400 hover:bg-turquoise-50/50"
         } ${busy ? "pointer-events-none opacity-60" : ""}`}
       >
         <input
@@ -158,7 +158,7 @@ export function CsvDropzoneUpload() {
       <p className="text-xs text-slate-500">
         Columns are auto-mapped (date, supplier, amount, category). Bad rows are skipped
         without stopping the import. Need column mapping or Sage exports?{" "}
-        <a href="/import" className="text-teal-700 hover:underline">
+        <a href="/import" className="text-turquoise-700 hover:underline">
           Use advanced import
         </a>
         .

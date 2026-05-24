@@ -612,7 +612,7 @@ export function CsvUploadWizard({
               key={s}
               className={
                 step === s
-                  ? "text-teal-700"
+                  ? "text-turquoise-700"
                   : i < ["upload", "map", "validate", "done"].indexOf(step)
                     ? "text-slate-500"
                     : "text-slate-300"
@@ -631,7 +631,7 @@ export function CsvUploadWizard({
             onClick={() => setImportMode("guided")}
             className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
               importMode === "guided"
-                ? "bg-white text-teal-800 shadow-sm"
+                ? "bg-white text-turquoise-800 shadow-sm"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
@@ -642,7 +642,7 @@ export function CsvUploadWizard({
             onClick={() => setImportMode("quick")}
             className={`flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
               importMode === "quick"
-                ? "bg-white text-teal-800 shadow-sm"
+                ? "bg-white text-turquoise-800 shadow-sm"
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
@@ -671,7 +671,7 @@ export function CsvUploadWizard({
       {busy && (
         <div className="w-full bg-slate-200 rounded-full h-2">
           <div
-            className="bg-teal-600 h-2 rounded-full transition-all"
+            className="bg-turquoise-600 h-2 rounded-full transition-all"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -690,7 +690,7 @@ export function CsvUploadWizard({
               type="button"
               disabled={busy}
               onClick={loadSampleCsv}
-              className="w-full rounded-xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-900 hover:bg-teal-100 disabled:opacity-50"
+              className="w-full rounded-xl border border-turquoise-200 bg-turquoise-50 px-4 py-3 text-sm font-semibold text-turquoise-900 hover:bg-turquoise-100 disabled:opacity-50"
             >
               {busy ? "Loading…" : "Load sample data (pub_sample_20.csv)"}
             </button>
@@ -702,7 +702,7 @@ export function CsvUploadWizard({
               checked={replaceExisting}
               onChange={(e) => setReplaceExisting(e.target.checked)}
               disabled={busy}
-              className="mt-0.5 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+              className="mt-0.5 rounded border-slate-300 text-turquoise-600 focus:ring-turquoise-500"
             />
             <span>Replace existing data (recommended)</span>
           </label>
@@ -710,8 +710,8 @@ export function CsvUploadWizard({
           <div
             className={`border-2 border-dashed rounded-xl p-10 text-center transition-all ${
               isDragging
-                ? "border-teal-500 bg-teal-50"
-                : "border-slate-200 hover:border-teal-400"
+                ? "border-turquoise-500 bg-turquoise-50"
+                : "border-slate-200 hover:border-turquoise-400"
             } ${busy ? "opacity-60 pointer-events-none" : ""}`}
             onDragEnter={(e) => {
               e.preventDefault();
@@ -757,7 +757,7 @@ export function CsvUploadWizard({
               type="button"
               disabled={busy}
               onClick={() => runQuickFileImport(file)}
-              className="w-full rounded-lg bg-teal-600 py-3 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
+              className="w-full rounded-lg bg-turquoise-600 py-3 text-sm font-semibold text-white hover:bg-turquoise-700 disabled:opacity-50"
             >
               {busy ? "Importing…" : `Quick import: ${file.name}`}
             </button>
@@ -778,7 +778,7 @@ export function CsvUploadWizard({
               disabled={busy}
               rows={5}
               placeholder="date,pub,supplier,description,amount"
-              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-mono text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 disabled:opacity-60 resize-y"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-mono text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-turquoise-500/30 focus:border-turquoise-500 disabled:opacity-60 resize-y"
             />
             <button
               type="button"
@@ -788,7 +788,7 @@ export function CsvUploadWizard({
                   ? runQuickImport(pasteText.trim(), "Pasted CSV")
                   : handleGuidedPaste()
               }
-              className="w-full rounded-lg py-2.5 text-sm font-medium bg-teal-600 text-white hover:bg-teal-700 disabled:bg-slate-200 disabled:text-slate-500"
+              className="w-full rounded-lg py-2.5 text-sm font-medium bg-turquoise-600 text-white hover:bg-turquoise-700 disabled:bg-slate-200 disabled:text-slate-500"
             >
               {busy
                 ? "Working…"
@@ -799,7 +799,7 @@ export function CsvUploadWizard({
           </div>
 
           <div className="flex justify-center gap-3 text-sm">
-            <a href="/spend_template.csv" download className="text-teal-700 hover:underline">
+            <a href="/spend_template.csv" download className="text-turquoise-700 hover:underline">
               Download template
             </a>
             <a href="/pub_sample_20.csv" download className="text-slate-600 hover:underline">
@@ -834,7 +834,7 @@ export function CsvUploadWizard({
                   setMapping((m) => ({ ...m, headerRowsToSkip: detectedHeaderRow }));
                   reparseWithHeaderSkip(detectedHeaderRow);
                 }}
-                className="text-sm text-teal-700 hover:underline"
+                className="text-sm text-turquoise-700 hover:underline"
               >
                 Use detected header (row {detectedHeaderRow + 1})
               </button>
@@ -906,7 +906,7 @@ export function CsvUploadWizard({
             <button
               type="button"
               onClick={runValidation}
-              className="rounded-lg bg-teal-600 text-white px-4 py-2 text-sm font-medium hover:bg-teal-700"
+              className="rounded-lg bg-turquoise-600 text-white px-4 py-2 text-sm font-medium hover:bg-turquoise-700"
             >
               Validate data
             </button>
@@ -992,7 +992,7 @@ export function CsvUploadWizard({
               type="button"
               disabled={busy || validCount === 0}
               onClick={confirmImport}
-              className="rounded-lg bg-teal-600 text-white px-4 py-2 text-sm font-medium hover:bg-teal-700 disabled:opacity-50"
+              className="rounded-lg bg-turquoise-600 text-white px-4 py-2 text-sm font-medium hover:bg-turquoise-700 disabled:opacity-50"
             >
               {validCount > 0 && errors.length > 0
                 ? `Import ${validCount} valid rows (partial)`
@@ -1010,7 +1010,7 @@ export function CsvUploadWizard({
             <button
               type="button"
               onClick={goToDashboard}
-              className="rounded-lg bg-teal-600 text-white px-5 py-2.5 text-sm font-medium hover:bg-teal-700"
+              className="rounded-lg bg-turquoise-600 text-white px-5 py-2.5 text-sm font-medium hover:bg-turquoise-700"
             >
               View dashboard
             </button>

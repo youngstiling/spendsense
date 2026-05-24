@@ -10,7 +10,7 @@ export function AppNav({
 }) {
   const link = "px-3 py-1.5 rounded-md text-sm transition-colors";
   const idle = "text-slate-600 hover:bg-slate-100";
-  const on = "bg-teal-600 text-white font-medium";
+  const on = "bg-turquoise-600 text-white font-medium";
 
   return (
     <header className="mb-8 flex flex-wrap items-end justify-between gap-4">

@@ -14,7 +14,7 @@ import {
   YAxis,
 } from "recharts";
 
-const CHART_COLORS = ["#0d9488", "#0891b2", "#6366f1", "#8b5cf6", "#f59e0b", "#ec4899"];
+const CHART_COLORS = ["#0891b2", "#06b6d4", "#6366f1", "#8b5cf6", "#f59e0b", "#ec4899"];
 
 function formatMoney(n: number) {
   return new Intl.NumberFormat("en-GB", {
@@ -78,7 +78,7 @@ export function DashboardCharts({
             <XAxis type="number" tickFormatter={(v) => `£${(v / 1000).toFixed(0)}k`} />
             <YAxis type="category" dataKey="name" width={72} tick={{ fontSize: 11 }} />
             <Tooltip formatter={moneyTooltip} />
-            <Bar dataKey="value" fill="#0d9488" radius={[0, 4, 4, 0]} />
+            <Bar dataKey="value" fill="#0891b2" radius={[0, 4, 4, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -92,9 +92,9 @@ export function DashboardCharts({
             <Line
               type="monotone"
               dataKey="value"
-              stroke="#0d9488"
+              stroke="#0891b2"
               strokeWidth={2}
-              dot={{ fill: "#0d9488", r: 4 }}
+              dot={{ fill: "#0891b2", r: 4 }}
             />
           </LineChart>
         </ResponsiveContainer>

@@ -36,9 +36,9 @@ export function MonthlySpendChart({ data }: { data: ChartDatum[] }) {
             <Line
               type="monotone"
               dataKey="value"
-              stroke="#0d9488"
+              stroke="#0891b2"
               strokeWidth={2.5}
-              dot={{ fill: "#0d9488", r: 4 }}
+              dot={{ fill: "#0891b2", r: 4 }}
             />
           </LineChart>
         </ResponsiveContainer>
@@ -104,9 +104,9 @@ export function SavingsPanel({ rows }: { rows: SupplierSavingsRow[] }) {
   if (!rows.length) return null;
 
   return (
-    <div className="rounded-2xl border border-teal-200/80 bg-teal-50/40 p-6 shadow-sm">
-      <h3 className="text-base font-semibold text-teal-950">Price inconsistency savings</h3>
-      <p className="mt-1 text-sm text-teal-900/80">
+    <div className="rounded-2xl border border-turquoise-200/80 bg-turquoise-50/40 p-6 shadow-sm">
+      <h3 className="text-base font-semibold text-turquoise-950">Price inconsistency savings</h3>
+      <p className="mt-1 text-sm text-turquoise-900/80">
         Same supplier, different amounts — negotiation opportunities
       </p>
       <ul className="mt-4 space-y-2">
@@ -116,7 +116,7 @@ export function SavingsPanel({ rows }: { rows: SupplierSavingsRow[] }) {
             className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-white/80 px-3 py-2 text-sm"
           >
             <span className="font-medium text-slate-900">{r.supplier}</span>
-            <span className="text-teal-800">
+            <span className="text-turquoise-800">
               {formatMoney(r.potentialSavings)} potential · {r.transactions} txns
             </span>
           </li>

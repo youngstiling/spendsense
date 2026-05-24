@@ -73,7 +73,7 @@ export function SpendDashboard({ enrichedData }: { enrichedData: Row[] }) {
     <div className="space-y-8">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm font-medium text-teal-700">Portfolio overview</p>
+          <p className="text-sm font-medium text-turquoise-700">Portfolio overview</p>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
             Spend intelligence
           </h1>
@@ -115,7 +115,7 @@ export function SpendDashboard({ enrichedData }: { enrichedData: Row[] }) {
           label="Total spend"
           value={formatMoney(kpis.totalSpend)}
           sublabel={pubFilter === "all" ? "All pubs" : pubFilter}
-          accent="teal"
+          accent="turquoise"
           featured
         />
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
@@ -123,7 +123,7 @@ export function SpendDashboard({ enrichedData }: { enrichedData: Row[] }) {
           label="Uncategorised"
           value={`${kpis.uncategorisedPercent.toFixed(1)}%`}
           sublabel="% of spend in £"
-          accent={kpis.uncategorisedPercent > 10 ? "amber" : "teal"}
+          accent={kpis.uncategorisedPercent > 10 ? "amber" : "turquoise"}
         />
         <KPICard
           label="Top pub"
@@ -147,13 +147,13 @@ export function SpendDashboard({ enrichedData }: { enrichedData: Row[] }) {
           label="Avg transaction"
           value={formatMoney(kpis.avgTransaction)}
           sublabel={`${kpis.transactionCount} rows`}
-          accent="teal"
+          accent="turquoise"
         />
         <KPICard
           label="Savings signal"
           value={formatMoney(kpis.potentialSavings)}
           sublabel="Price inconsistency estimate"
-          accent={kpis.potentialSavings > 0 ? "amber" : "teal"}
+          accent={kpis.potentialSavings > 0 ? "amber" : "turquoise"}
         />
         </div>
       </section>

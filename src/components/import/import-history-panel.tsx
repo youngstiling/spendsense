@@ -111,7 +111,7 @@ export function ImportHistoryPanel({
         <button
           type="button"
           onClick={() => refresh()}
-          className="text-xs text-teal-700 hover:underline"
+          className="text-xs text-turquoise-700 hover:underline"
         >
           Refresh
         </button>
