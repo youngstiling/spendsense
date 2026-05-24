@@ -33,11 +33,21 @@ type LegacyTransaction = {
 };
 
 export const QUICK_DEMO_TRANSACTIONS: LegacyTransaction[] = [
-  { pub: "Pub A", category: "Beer", amount: 120 },
-  { pub: "Pub B", category: "Food", amount: 300 },
-  { pub: "Pub C", category: "Wine", amount: 220 },
-  { pub: "Pub D", category: "Spirits", amount: 180 },
-  { pub: "Pub E", category: "Soft Drinks", amount: 90 },
+  { pub: "The Crown", date: "2026-01-06", category: "Beer", amount: 420, supplier: "Heineken" },
+  { pub: "The Crown", date: "2026-01-13", category: "Beer", amount: 380, supplier: "Carlsberg" },
+  { pub: "The Crown", date: "2026-01-20", category: "Food", amount: 290, supplier: "Booker" },
+  { pub: "Riverside Inn", date: "2026-01-07", category: "Food", amount: 510, supplier: "Brakes" },
+  { pub: "Riverside Inn", date: "2026-01-14", category: "Beer", amount: 265, supplier: "Budweiser" },
+  { pub: "Riverside Inn", date: "2026-01-21", category: "Food", amount: 445, supplier: "Bidfood" },
+  { pub: "Station Tap", date: "2026-01-08", category: "Beer", amount: 195, supplier: "Guinness" },
+  { pub: "Station Tap", date: "2026-01-15", category: "Wine", amount: 340, supplier: "Majestic" },
+  { pub: "Station Tap", date: "2026-01-22", category: "Food", amount: 175, supplier: "Booker" },
+  { pub: "Harbour Arms", date: "2026-01-09", category: "Food", amount: 620, supplier: "Brakes" },
+  { pub: "Harbour Arms", date: "2026-01-16", category: "Beer", amount: 310, supplier: "Heineken" },
+  { pub: "Harbour Arms", date: "2026-01-23", category: "Spirits", amount: 240, supplier: "Matthew Clark" },
+  { pub: "Oak & Hops", date: "2026-01-10", category: "Beer", amount: 155, supplier: "Carlsberg" },
+  { pub: "Oak & Hops", date: "2026-01-17", category: "Soft Drinks", amount: 88, supplier: "Coca-Cola" },
+  { pub: "Oak & Hops", date: "2026-01-24", category: "Food", amount: 330, supplier: "Bidfood" },
 ];
 
 function legacyToRows(items: LegacyTransaction[]): Row[] {

@@ -5,7 +5,7 @@ export function AppNav({
   active,
   action,
 }: {
-  active: "dashboard" | "upload";
+  active: "dashboard" | "overview" | "upload";
   action?: ReactNode;
 }) {
   const link = "px-3 py-1.5 rounded-md text-sm transition-colors";
@@ -22,6 +22,12 @@ export function AppNav({
             className={`${link} ${active === "dashboard" ? on : idle}`}
           >
             Dashboard
+          </Link>
+          <Link
+            href="/overview"
+            className={`${link} ${active === "overview" ? on : idle}`}
+          >
+            Overview
           </Link>
           <Link
             href="/upload"

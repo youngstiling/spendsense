@@ -22,9 +22,13 @@ export default function ImportPage() {
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-3xl mx-auto px-4 py-8">
         <AppNav active="upload" />
-        {demo && (
+        {demo ? (
           <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-950">
             Demo mode — imports stored in this browser. Enterprise API available with Supabase.
+          </div>
+        ) : (
+          <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-700">
+            Not logged in? Imports are saved in this browser until you sign in to sync with Supabase.
           </div>
         )}
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-6">

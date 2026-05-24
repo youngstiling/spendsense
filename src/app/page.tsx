@@ -8,7 +8,7 @@ export default function Home() {
 
   useEffect(() => {
     // Always go to dashboard (no auth for now)
-    router.replace("/dashboard");
+    router.replace("/overview");
   }, [router]);
 
   return (

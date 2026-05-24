@@ -96,7 +96,8 @@ export async function deleteAllSpendData(): Promise<{
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: "Not logged in." };
+    clearDemoRows();
+    return {};
   }
 
   const { error } = await supabase

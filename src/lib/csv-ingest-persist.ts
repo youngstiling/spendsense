@@ -82,11 +82,23 @@ export async function persistIngestedRows(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return {
-      ok: false,
-      inserted: 0,
-      error: "Not logged in. Open /login first.",
-    };
+    try {
+      if (replaceExisting) {
+        replaceDemoRows(rows);
+      } else {
+        saveDemoRows(rows);
+      }
+      return { ok: true, inserted: rows.length };
+    } catch (err: unknown) {
+      return {
+        ok: false,
+        inserted: 0,
+        error:
+          err instanceof Error
+            ? err.message
+            : "Could not save data in this browser.",
+      };
+    }
   }
 
   if (replaceExisting) {

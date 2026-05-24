@@ -48,7 +48,11 @@ export default function Dashboard() {
       } else if (error) {
         console.warn("[dashboard] spend_transactions:", error);
       }
-      setRows(fromDb);
+      if (fromDb.length > 0) {
+        setRows(fromDb);
+        return;
+      }
+      setRows(loadStoredRows());
       return;
     }
 
@@ -67,6 +71,7 @@ export default function Dashboard() {
   }, [refreshData]);
 
   const loadDemoData = () => {
+    setSchemaError(null);
     const demo = loadQuickDemoRows();
     replaceDemoRows(demo);
     setRows(demo);
@@ -79,9 +84,8 @@ export default function Dashboard() {
         setSchemaError(schemaHint || error || "Could not clear database.");
         return;
       }
-    } else {
-      clearStoredRows();
     }
+    clearStoredRows();
     setRows([]);
   };
 
@@ -123,7 +127,7 @@ export default function Dashboard() {
             </h1>
             <p className="mx-auto mt-3 max-w-md text-sm text-slate-600">
               {supabaseSource
-                ? "No spend data in spend_transactions yet. Log in, import a CSV, and rows will load from Supabase."
+                ? "No spend data yet. Load demo data to explore the dashboard, log in to sync with Supabase, or import a CSV."
                 : "No data yet. Start with demo data or upload a CSV (demo mode uses browser storage only)."}
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
