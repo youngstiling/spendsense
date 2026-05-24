@@ -14,7 +14,7 @@ export function AuthListener() {
       if (
         path === "/login" ||
         path === "/" ||
-        path.startsWith("/auth/callback")
+        path.startsWith("/auth/")
       ) {
         window.location.replace("/dashboard");
       }
