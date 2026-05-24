@@ -27,6 +27,7 @@ export function OverviewPage() {
         <KpiCard
           label="Total spend (this month)"
           value={fmtGbp(overview.totalSpendThisMonth)}
+          featured
         />
         <KpiCard
           label="vs last month"
@@ -49,6 +50,7 @@ export function OverviewPage() {
           label="Top risk pub"
           value={overview.topRiskPub ?? "—"}
           sub={engine.topRisks[0]?.keyIssue}
+          accent="turquoise"
         />
       </div>
       {engine.portfolioOverspend && (

@@ -48,7 +48,7 @@ export function ChatPage() {
         title="Chat"
         subtitle="Natural language queries on your spend dataset"
       />
-      <div className="rounded-xl border border-zinc-800 bg-[#111113] p-6">
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm">
         <div className="flex flex-wrap gap-2">
           {SUGGESTIONS.map((s) => (
             <button
@@ -58,7 +58,7 @@ export function ChatPage() {
                 setQuestion(s);
                 void ask(s);
               }}
-              className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
+              className="rounded-lg border border-turquoise-200 bg-turquoise-50 px-3 py-1.5 text-xs font-medium text-turquoise-900 transition hover:bg-turquoise-100"
             >
               {s}
             </button>
@@ -75,19 +75,19 @@ export function ChatPage() {
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             placeholder="Ask about overspending, suppliers, risks…"
-            className="flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:border-cyan-700 focus:outline-none"
+            className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-turquoise-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-turquoise-500/20"
           />
           <button
             type="submit"
             disabled={asking}
-            className="rounded-lg bg-cyan-600 px-5 py-3 text-sm font-semibold text-white hover:bg-cyan-500 disabled:opacity-50"
+            className="rounded-xl bg-turquoise-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-turquoise-700 disabled:opacity-50"
           >
             {asking ? "…" : "Ask"}
           </button>
         </form>
         {answer && (
-          <div className="mt-6 rounded-lg border border-zinc-800 bg-zinc-900/80 p-4">
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-zinc-300">
+          <div className="mt-6 rounded-xl border border-turquoise-100 bg-turquoise-50/60 p-4">
+            <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">
               {answer}
             </p>
           </div>

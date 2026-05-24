@@ -29,8 +29,10 @@ export function RisksPage() {
       <div className="mb-6 grid gap-4 lg:grid-cols-3">
         {engine.topRisks.slice(0, 3).map((r, i) => (
           <InsightCard key={r.pubName} title={`#${i + 1} ${r.pubName}`} highlight={i === 0}>
-            <p className="text-2xl font-semibold text-white">{r.riskScore}</p>
-            <p className="mt-2 text-sm text-zinc-400">{r.keyIssue}</p>
+            <p className="text-2xl font-semibold text-turquoise-700">
+              {r.riskScore}
+            </p>
+            <p className="mt-2 text-sm text-slate-600">{r.keyIssue}</p>
           </InsightCard>
         ))}
       </div>

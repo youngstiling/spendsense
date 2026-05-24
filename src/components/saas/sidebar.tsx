@@ -16,14 +16,17 @@ const NAV = [
 
 export function SaasSidebar() {
   const pathname = usePathname();
+  const link = "rounded-lg px-3 py-2 text-sm transition-colors";
+  const idle = "text-slate-600 hover:bg-slate-100";
+  const on = "bg-turquoise-600 font-medium text-white";
 
   return (
-    <aside className="flex h-full w-56 shrink-0 flex-col border-r border-zinc-800 bg-[#0B0B0C] px-3 py-6">
+    <aside className="flex h-full w-56 shrink-0 flex-col border-r border-slate-200/80 bg-white px-3 py-6 shadow-sm">
       <div className="mb-8 px-2">
-        <p className="text-xs font-semibold uppercase tracking-widest text-zinc-500">
-          SpendSense
+        <p className="text-lg font-semibold text-slate-900">SpendSense</p>
+        <p className="mt-0.5 text-xs font-medium text-turquoise-700">
+          Insight Engine
         </p>
-        <p className="mt-1 text-sm font-medium text-white">Insight Engine</p>
       </div>
       <nav className="flex flex-1 flex-col gap-0.5">
         {NAV.map(({ href, label }) => {
@@ -32,27 +35,23 @@ export function SaasSidebar() {
             <Link
               key={href}
               href={href}
-              className={`rounded-lg px-3 py-2 text-sm transition ${
-                active
-                  ? "bg-zinc-800 font-medium text-white"
-                  : "text-zinc-400 hover:bg-zinc-900 hover:text-zinc-200"
-              }`}
+              className={`${link} ${active ? on : idle}`}
             >
               {label}
             </Link>
           );
         })}
       </nav>
-      <div className="mt-auto space-y-1 border-t border-zinc-800 pt-4">
+      <div className="mt-auto space-y-1 border-t border-slate-100 pt-4">
         <Link
           href="/dashboard"
-          className="block rounded-lg px-3 py-2 text-xs text-zinc-500 hover:text-zinc-300"
+          className="block rounded-lg px-3 py-2 text-xs text-slate-500 hover:bg-slate-50 hover:text-slate-700"
         >
           Classic dashboard →
         </Link>
         <Link
           href="/import"
-          className="block rounded-lg px-3 py-2 text-xs text-cyan-500 hover:text-cyan-400"
+          className="block rounded-lg px-3 py-2 text-xs font-semibold text-turquoise-700 hover:bg-turquoise-50"
         >
           Import CSV
         </Link>

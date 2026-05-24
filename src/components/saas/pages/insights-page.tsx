@@ -34,60 +34,61 @@ export function InsightsPage() {
         <InsightCard title="Biggest risk" highlight>
           {highlights.biggestRisk ? (
             <>
-              <p className="text-lg font-semibold text-white">
+              <p className="text-lg font-semibold text-slate-900">
                 {highlights.biggestRisk.pubName}
               </p>
-              <p className="mt-1 text-sm text-zinc-400">
+              <p className="mt-1 text-sm text-slate-600">
                 {highlights.biggestRisk.keyIssue}
               </p>
             </>
           ) : (
-            <p className="text-sm text-zinc-500">No elevated risks</p>
+            <p className="text-sm text-slate-500">No elevated risks</p>
           )}
         </InsightCard>
         <InsightCard title="Biggest increase">
           {highlights.biggestIncrease ? (
             <>
-              <p className="text-lg font-semibold text-white">
+              <p className="text-lg font-semibold text-slate-900">
                 {highlights.biggestIncrease.pubName}
               </p>
-              <p className="mt-1 text-sm text-cyan-400">
+              <p className="mt-1 text-sm font-medium text-turquoise-700">
                 {fmtPct(highlights.biggestIncrease.percentIncrease)} MoM
               </p>
             </>
           ) : (
-            <p className="text-sm text-zinc-500">Stable MoM</p>
+            <p className="text-sm text-slate-500">Stable MoM</p>
           )}
         </InsightCard>
         <InsightCard title="Worst supplier">
           {highlights.worstSupplier ? (
             <>
-              <p className="text-lg font-semibold text-white">
+              <p className="text-lg font-semibold text-slate-900">
                 {highlights.worstSupplier.supplier}
               </p>
-              <p className="mt-1 text-sm text-red-400">
+              <p className="mt-1 text-sm font-medium text-red-600">
                 {fmtPct(highlights.worstSupplier.inflationPercent)} inflation
               </p>
             </>
           ) : (
-            <p className="text-sm text-zinc-500">No supplier inflation</p>
+            <p className="text-sm text-slate-500">No supplier inflation</p>
           )}
         </InsightCard>
       </div>
       <div className="space-y-3">
-        <h2 className="text-sm font-medium text-zinc-400">AI narratives</h2>
+        <h2 className="text-sm font-semibold text-slate-700">AI narratives</h2>
         {aiLoading ? (
           <LoadingState />
         ) : (
           aiInsights.map((line, i) => (
             <InsightCard key={i} title={`Insight ${i + 1}`}>
-              <p className="text-sm leading-relaxed text-zinc-300">{line}</p>
+              <p className="text-sm leading-relaxed text-slate-700">{line}</p>
             </InsightCard>
           ))
         )}
       </div>
-      <p className="mt-4 text-xs text-zinc-600">
-        Add OPENAI_API_KEY in Vercel for GPT narratives; rule-based insights used otherwise.
+      <p className="mt-4 text-xs text-slate-500">
+        Add OPENAI_API_KEY in Vercel for GPT narratives; rule-based insights used
+        otherwise.
       </p>
     </>
   );
