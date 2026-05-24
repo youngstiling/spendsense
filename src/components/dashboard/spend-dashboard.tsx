@@ -1,13 +1,28 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useMemo, useState } from "react";
+import { generateInsights } from "@/lib/brand-category";
 import type { Row } from "@/lib/csv";
 import {
   computeDashboardKpis,
   computeSpendByCategory,
+  computeSpendByMonth,
   computeSpendByPub,
+  computeSpendBySupplier,
+  filterRowsByPub,
+  listPubNames,
 } from "@/lib/dashboard-analytics";
+import { pubsAboveAverageSpend } from "@/lib/pub-summary";
+import { calculateSavingsOpportunity } from "@/lib/savings-opportunity";
+import { downloadSpendCsv } from "./export-csv";
 import { formatMoney, formatMoneyPrecise } from "./format";
+import {
+  HighSpendPubsPanel,
+  MonthlySpendChart,
+  SavingsPanel,
+  TopSuppliersTable,
+} from "./dashboard-extras";
 import { InsightsPanel } from "./insights-panel";
 import { KPICard } from "./kpi-card";
 
@@ -24,87 +39,119 @@ const SpendCharts = dynamic(
   }
 );
 
-export function SpendDashboard({
-  enrichedData,
-  insights,
-}: {
-  enrichedData: Row[];
-  insights: string[];
-}) {
-  const kpis = computeDashboardKpis(enrichedData);
-  const pubData = computeSpendByPub(enrichedData);
-  const categoryData = computeSpendByCategory(enrichedData);
+export function SpendDashboard({ enrichedData }: { enrichedData: Row[] }) {
+  const [pubFilter, setPubFilter] = useState("all");
+
+  const pubNames = useMemo(() => listPubNames(enrichedData), [enrichedData]);
+
+  const scoped = useMemo(
+    () => filterRowsByPub(enrichedData, pubFilter),
+    [enrichedData, pubFilter]
+  );
+
+  const kpis = useMemo(() => computeDashboardKpis(scoped), [scoped]);
+  const pubData = useMemo(() => computeSpendByPub(scoped), [scoped]);
+  const categoryData = useMemo(() => computeSpendByCategory(scoped), [scoped]);
+  const monthData = useMemo(() => computeSpendByMonth(scoped), [scoped]);
+  const supplierData = useMemo(() => computeSpendBySupplier(scoped), [scoped]);
+  const highSpendPubs = useMemo(() => pubsAboveAverageSpend(scoped), [scoped]);
+  const insights = useMemo(() => generateInsights(scoped), [scoped]);
+  const savings = useMemo(
+    () =>
+      calculateSavingsOpportunity(
+        scoped.map((r) => ({
+          supplier: r.supplier,
+          amount: r.amount,
+          pub: r.pub,
+        })),
+        pubFilter !== "all" ? { pub: pubFilter } : undefined
+      ),
+    [scoped, pubFilter]
+  );
 
   return (
     <div className="space-y-8">
-      <header className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+      <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm font-medium text-teal-700">Portfolio overview</p>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
             Spend intelligence
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            {kpis.transactionCount.toLocaleString()} transactions analysed
+            {kpis.transactionCount.toLocaleString()} transactions · {kpis.pubCount}{" "}
+            pub{kpis.pubCount === 1 ? "" : "s"}
           </p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {pubNames.length > 1 && (
+            <label className="flex items-center gap-2 text-sm text-slate-600">
+              <span className="font-medium">Pub</span>
+              <select
+                value={pubFilter}
+                onChange={(e) => setPubFilter(e.target.value)}
+                className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm"
+              >
+                <option value="all">All pubs</option>
+                {pubNames.map((pub) => (
+                  <option key={pub} value={pub}>
+                    {pub}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <button
+            type="button"
+            onClick={() => downloadSpendCsv(scoped)}
+            className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+          >
+            Export CSV
+          </button>
         </div>
       </header>
 
-      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
         <KPICard
           label="Total spend"
           value={formatMoney(kpis.totalSpend)}
-          sublabel="Across all pubs and categories"
+          sublabel={pubFilter === "all" ? "All pubs" : pubFilter}
           accent="teal"
-          icon={
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-          }
         />
         <KPICard
           label="Uncategorised"
           value={`${kpis.uncategorisedPercent.toFixed(1)}%`}
-          sublabel={
-            kpis.uncategorisedPercent > 10
-              ? "Above 10% of spend — review rules or CSV categories"
-              : "% of total spend in £"
-          }
+          sublabel="% of spend in £"
           accent={kpis.uncategorisedPercent > 10 ? "amber" : "teal"}
-          icon={
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-              />
-            </svg>
-          }
         />
         <KPICard
-          label="Top spending pub"
+          label="Top pub"
           value={kpis.topPubName}
           sublabel={
-            kpis.topPubSpend > 0
-              ? `${formatMoneyPrecise(kpis.topPubSpend)} total spend`
-              : "No pub data in import"
+            kpis.topPubSpend > 0 ? formatMoneyPrecise(kpis.topPubSpend) : undefined
           }
           accent="indigo"
-          icon={
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-              />
-            </svg>
+        />
+        <KPICard
+          label="Top supplier"
+          value={kpis.topSupplierName}
+          sublabel={
+            kpis.topSupplierSpend > 0
+              ? formatMoneyPrecise(kpis.topSupplierSpend)
+              : undefined
           }
+          accent="indigo"
+        />
+        <KPICard
+          label="Avg transaction"
+          value={formatMoney(kpis.avgTransaction)}
+          sublabel={`${kpis.transactionCount} rows`}
+          accent="teal"
+        />
+        <KPICard
+          label="Savings signal"
+          value={formatMoney(kpis.potentialSavings)}
+          sublabel="Price inconsistency estimate"
+          accent={kpis.potentialSavings > 0 ? "amber" : "teal"}
         />
       </section>
 
@@ -114,39 +161,53 @@ export function SpendDashboard({
         topPubName={kpis.topPubName}
       />
 
+      <MonthlySpendChart data={monthData} />
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <TopSuppliersTable data={supplierData} />
+        <div className="space-y-6">
+          <HighSpendPubsPanel pubs={highSpendPubs} />
+          <SavingsPanel rows={savings.bySupplier} />
+        </div>
+      </div>
+
       <InsightsPanel insights={insights} />
 
       <section>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-base font-semibold text-slate-900">Recent transactions</h2>
           <span className="text-xs text-slate-500">
-            Latest {Math.min(50, enrichedData.length)}
+            Latest {Math.min(50, scoped.length)}
           </span>
         </div>
         <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-sm">
+            <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50/80 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                   <th className="px-5 py-3.5">Date</th>
                   <th className="px-5 py-3.5">Pub</th>
                   <th className="px-5 py-3.5">Supplier</th>
+                  <th className="px-5 py-3.5">Description</th>
                   <th className="px-5 py-3.5">Category</th>
                   <th className="px-5 py-3.5 text-right">Amount</th>
                 </tr>
               </thead>
               <tbody>
-                {enrichedData.slice(0, 50).map((row, i) => (
+                {scoped.slice(0, 50).map((row, i) => (
                   <tr
                     key={`${row.date}-${row.supplier}-${i}`}
                     className="border-b border-slate-50 transition-colors last:border-0 hover:bg-slate-50/80"
                   >
                     <td className="px-5 py-3.5 text-slate-600">{row.date}</td>
-                    <td className="max-w-[140px] truncate px-5 py-3.5 text-slate-700">
+                    <td className="max-w-[120px] truncate px-5 py-3.5 text-slate-700">
                       {row.pub ?? "—"}
                     </td>
-                    <td className="max-w-[160px] truncate px-5 py-3.5 font-medium text-slate-900">
+                    <td className="max-w-[140px] truncate px-5 py-3.5 font-medium text-slate-900">
                       {row.supplier}
+                    </td>
+                    <td className="max-w-[160px] truncate px-5 py-3.5 text-slate-600">
+                      {row.description ?? "—"}
                     </td>
                     <td className="px-5 py-3.5">
                       <span className="inline-flex rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700">

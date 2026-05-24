@@ -13,7 +13,7 @@ import {
   replaceDemoRows,
 } from "@/lib/config";
 import { parseSpendCsvText } from "@/lib/csv";
-import { enrichTransactions, generateInsights } from "@/lib/brand-category";
+import { enrichTransactions } from "@/lib/brand-category";
 import {
   rowsFromSpendTransactions,
   SPEND_TRANSACTIONS_TABLE,
@@ -89,19 +89,13 @@ export default function DashboardPage() {
     loadData();
   }, [demo]);
 
-  const analytics = useMemo(() => {
-    if (!data.length) {
-      return { enrichedData: [] as Row[], insights: [] as string[] };
-    }
+  const enrichedData = useMemo(() => {
+    if (!data.length) return [] as Row[];
     try {
-      const enrichedData = enrichTransactions(data);
-      return {
-        enrichedData,
-        insights: generateInsights(enrichedData),
-      };
+      return enrichTransactions(data);
     } catch (err) {
       console.error("Dashboard analytics error:", err);
-      return { enrichedData: data, insights: [] as string[] };
+      return data;
     }
   }, [data]);
 
@@ -163,10 +157,7 @@ export default function DashboardPage() {
           Demo mode — data stored in this browser only.
         </div>
       )}
-      <SpendDashboard
-        enrichedData={analytics.enrichedData}
-        insights={analytics.insights}
-      />
+      <SpendDashboard enrichedData={enrichedData} />
     </>
   );
 }
