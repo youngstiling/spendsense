@@ -1,6 +1,7 @@
 /**
  * Application mirror of the Postgres schema.
- * SOURCE OF TRUTH: supabase/full-setup.sql (and supabase/migrations/*).
+ * SOURCE OF TRUTH: supabase/migrations/* (CI: .github/workflows/supabase-schema-guard.yml).
+ * Reference dump: supabase/full-setup.sql
  * Update this file whenever the database schema changes.
  */
 

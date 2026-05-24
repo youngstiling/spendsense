@@ -7,7 +7,7 @@
 
 ## 2. Run the database schema
 
-**Source of truth:** `supabase/full-setup.sql` (mirrored in app code as `src/lib/supabase/schema.ts`).
+**Source of truth:** `supabase/migrations/` (applied via `supabase db reset` locally or **Supabase Schema Guard** on GitHub). App mirror: `src/lib/supabase/schema.ts`. One-shot SQL Editor dump: `supabase/full-setup.sql`.
 
 1. In Supabase: **SQL Editor** → **New query**.
 2. Open `supabase/full-setup.sql` from this repo, copy all of it, paste into the editor.

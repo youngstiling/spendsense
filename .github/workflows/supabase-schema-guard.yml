@@ -1,0 +1,66 @@
+# =====================================================
+# SUPABASE + GITHUB BULLETPROOF SOURCE OF TRUTH PIPELINE
+# Prevents schema drift (e.g. missing canonical_supplier)
+# =====================================================
+
+name: Supabase Schema Guard
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  schema-guard:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Install psql (schema assertions)
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Start Supabase (Docker)
+        run: supabase start
+
+      - name: Apply migrations (source of truth)
+        run: supabase db reset --no-seed
+
+      - name: List spend_transactions columns
+        run: |
+          supabase db query "
+          select column_name
+          from information_schema.columns
+          where table_schema = 'public'
+            and table_name = 'spend_transactions'
+          order by column_name;
+          "
+
+      - name: Enforce required columns (canonical_supplier + app fields)
+        run: bash scripts/ci/assert-spend-transactions-schema.sh
+
+      - name: App schema.ts mirrors required DB columns
+        run: |
+          for col in canonical_supplier supplier pub description import_batch_id; do
+            grep -q "$col" src/lib/supabase/schema.ts || {
+              echo "src/lib/supabase/schema.ts missing: $col"
+              exit 1
+            }
+          done
+          echo "OK — schema.ts includes required column names."
+
+      - name: Fail if canonical_supplier missing (explicit guard)
+        run: |
+          COUNT=$(psql postgresql://postgres:postgres@127.0.0.1:54322/postgres -tAc \
+            "select count(*) from information_schema.columns
+             where table_schema='public'
+               and table_name='spend_transactions'
+               and column_name='canonical_supplier';")
+          echo "canonical_supplier count: $COUNT"
+          test "$COUNT" = "1"

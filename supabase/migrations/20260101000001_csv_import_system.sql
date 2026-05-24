@@ -1,6 +1,5 @@
--- Enterprise CSV import system (run after schema.sql)
+-- Enterprise CSV import system
 
--- Import job tracking
 create type csv_import_status as enum (
   'pending',
   'validating',
@@ -33,7 +32,6 @@ create table if not exists csv_import_jobs (
 create index if not exists csv_import_jobs_user_id_idx on csv_import_jobs(user_id);
 create index if not exists csv_import_jobs_created_at_idx on csv_import_jobs(created_at desc);
 
--- Row-level validation errors (for error report export)
 create table if not exists csv_import_errors (
   id uuid primary key default gen_random_uuid(),
   import_id uuid not null references csv_import_jobs(id) on delete cascade,
@@ -47,7 +45,6 @@ create table if not exists csv_import_errors (
 
 create index if not exists csv_import_errors_import_id_idx on csv_import_errors(import_id);
 
--- Saved column mapping templates per user
 create table if not exists csv_column_mapping_templates (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
@@ -60,14 +57,12 @@ create table if not exists csv_column_mapping_templates (
 
 create index if not exists csv_mapping_templates_user_id_idx on csv_column_mapping_templates(user_id);
 
--- Link transactions to import batch for rollback
 alter table spend_transactions
   add column if not exists import_batch_id uuid references csv_import_jobs(id) on delete set null;
 
 create index if not exists spend_transactions_import_batch_id_idx
   on spend_transactions(import_batch_id);
 
--- RLS
 alter table csv_import_jobs enable row level security;
 alter table csv_import_errors enable row level security;
 alter table csv_column_mapping_templates enable row level security;
