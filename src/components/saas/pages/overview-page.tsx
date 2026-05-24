@@ -1,5 +1,7 @@
 "use client";
 
+import { useFinance } from "../finance-provider";
+import { AuditTrustPanel } from "../audit-trust-panel";
 import { fmtGbp, fmtPct } from "../format";
 import { useEngineReady } from "../ui";
 import {
@@ -10,6 +12,7 @@ import {
 } from "../ui";
 
 export function OverviewPage() {
+  const { audit } = useFinance();
   const { loading, engine, hasData } = useEngineReady();
 
   if (loading) return <LoadingState />;
@@ -53,6 +56,8 @@ export function OverviewPage() {
           accent="turquoise"
         />
       </div>
+      <AuditTrustPanel report={audit} />
+
       {engine.portfolioOverspend && (
         <div className="mt-6 grid gap-4 lg:grid-cols-3">
           <KpiCard

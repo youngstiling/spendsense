@@ -11,6 +11,8 @@ import {
 } from "react";
 import { loadQuickDemoRows, replaceDemoRows } from "@/lib/config";
 import { getTransactionsClient } from "@/lib/finance/get-transactions-client";
+import { runAuditReport } from "@/lib/finance/audit-engine";
+import type { AuditReport } from "@/lib/finance/audit-engine";
 import { runFinancialEngine } from "@/lib/finance/run-financial-engine";
 import type { FinancialEngineResult } from "@/lib/finance/types";
 
@@ -20,6 +22,7 @@ type FinanceContextValue = {
   aiInsights: string[];
   aiLoading: boolean;
   engine: FinancialEngineResult | null;
+  audit: AuditReport | null;
   transactionCount: number;
   refresh: () => Promise<void>;
   loadDemo: () => void;
@@ -33,6 +36,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [transactionCount, setTransactionCount] = useState(0);
   const [engine, setEngine] = useState<FinancialEngineResult | null>(null);
+  const [audit, setAudit] = useState<AuditReport | null>(null);
   const [aiInsights, setAiInsights] = useState<string[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
 
@@ -41,6 +45,31 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
     const txs = await getTransactionsClient();
     setTransactionCount(txs.length);
     setEngine(txs.length ? runFinancialEngine(txs) : null);
+
+    let auditReport: AuditReport | null = null;
+    try {
+      const res = await fetch("/api/finance/audit");
+      if (res.ok) {
+        const json = (await res.json()) as {
+          sql?: { total: number; rowCount: number; authenticated: boolean };
+        };
+        if (json.sql?.authenticated) {
+          auditReport = runAuditReport(
+            json.sql.total,
+            json.sql.rowCount,
+            txs
+          );
+        } else if (txs.length) {
+          auditReport = runAuditReport(0, 0, txs);
+        }
+      } else if (txs.length) {
+        auditReport = runAuditReport(0, 0, txs);
+      }
+    } catch {
+      if (txs.length) auditReport = runAuditReport(0, 0, txs);
+    }
+    setAudit(auditReport);
+
     setLoading(false);
     setReady(true);
   }, []);
@@ -101,6 +130,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       aiInsights,
       aiLoading,
       engine,
+      audit,
       transactionCount,
       refresh,
       loadDemo,
@@ -112,6 +142,7 @@ export function FinanceProvider({ children }: { children: ReactNode }) {
       aiInsights,
       aiLoading,
       engine,
+      audit,
       transactionCount,
       refresh,
       loadDemo,
