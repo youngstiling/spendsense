@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
@@ -135,7 +135,7 @@ export default function DashboardPage() {
           className="h-6 w-6 shrink-0 animate-spin rounded-full border-2 border-teal-600 border-t-transparent"
           aria-hidden
         />
-        <p className="text-base font-medium text-slate-600">Loading dashboard…</p>
+        <p className="text-base font-medium text-slate-600">Loading dashboardΓÇª</p>
       </div>
     );
   }
@@ -170,7 +170,7 @@ export default function DashboardPage() {
               disabled={loadingSample}
               className="rounded-lg bg-teal-600 px-4 py-2 text-sm font-semibold text-white hover:bg-teal-700 disabled:opacity-50"
             >
-              {loadingSample ? "Loading…" : "Load sample data"}
+              {loadingSample ? "LoadingΓÇª" : "Load sample data"}
             </button>
           )}
           <Link
@@ -188,7 +188,7 @@ export default function DashboardPage() {
     <>
       {demo && (
         <div className="mb-6 rounded-xl border border-amber-200/80 bg-amber-50 px-4 py-2.5 text-sm text-amber-950">
-          Demo mode — data stored in this browser only.
+          Demo mode ΓÇö data stored in this browser only.
         </div>
       )}
       <SpendDashboard enrichedData={enrichedData} />

@@ -1,10 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { isDemoMode } from "@/lib/demo";
+import { isAuthSkipped } from "@/lib/auth-config";
 import { updateSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
   try {
-    if (isDemoMode()) {
+    if (isAuthSkipped()) {
       return NextResponse.next();
     }
     return await updateSession(request);
