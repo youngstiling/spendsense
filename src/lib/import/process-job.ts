@@ -1,7 +1,10 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { BATCH_SIZE } from "./constants";
 import type { ImportRowError, Row } from "./types";
-import { toSpendTransactionInsert } from "@/lib/spend-transaction-db";
+import {
+  SPEND_TRANSACTIONS_TABLE,
+  toSpendTransactionInsert,
+} from "@/lib/spend-transaction-db";
 
 export async function insertRowsInBatches(
   supabase: SupabaseClient,
@@ -12,7 +15,7 @@ export async function insertRowsInBatches(
 ): Promise<{ successRows: number; error?: string }> {
   if (replaceExisting) {
     await supabase
-      .from("spend_transactions")
+      .from(SPEND_TRANSACTIONS_TABLE)
       .delete()
       .eq("user_id", userId);
   }
@@ -24,7 +27,7 @@ export async function insertRowsInBatches(
       toSpendTransactionInsert(r, userId, { import_batch_id: importId })
     );
 
-    const { error } = await supabase.from("spend_transactions").insert(chunk);
+    const { error } = await supabase.from(SPEND_TRANSACTIONS_TABLE).insert(chunk);
     if (error) {
       return {
         successRows,

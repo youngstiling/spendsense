@@ -28,7 +28,10 @@ import {
 import { sumAmount } from "@/lib/sum-amount";
 import type { ColumnMapping, ImportRowError } from "@/lib/import/types";
 import { deleteAllSpendData } from "@/lib/spend-data";
-import { toSpendTransactionInsert } from "@/lib/spend-transaction-db";
+import {
+  SPEND_TRANSACTIONS_TABLE,
+  toSpendTransactionInsert,
+} from "@/lib/spend-transaction-db";
 import { createClient } from "@/lib/supabase/client";
 import type { Row } from "@/lib/csv-shared";
 import { ColumnMapperUi } from "./column-mapper-ui";
@@ -326,7 +329,7 @@ export function CsvUploadWizard({
       }
     }
 
-    const { error: saveError } = await supabase.from("spend_transactions").insert(
+    const { error: saveError } = await supabase.from(SPEND_TRANSACTIONS_TABLE).insert(
       rows.map((r) => toSpendTransactionInsert(r, user.id))
     );
 

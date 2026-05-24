@@ -1,4 +1,5 @@
 import { clearDemoRows } from "@/lib/config";
+import { SPEND_TRANSACTIONS_TABLE } from "@/lib/spend-transaction-db";
 import { isDemoMode } from "@/lib/demo";
 import { createClient } from "@/lib/supabase/client";
 
@@ -18,7 +19,7 @@ export async function deleteAllSpendData(): Promise<{ error?: string }> {
   }
 
   const { error } = await supabase
-    .from("spend_transactions")
+    .from(SPEND_TRANSACTIONS_TABLE)
     .delete()
     .eq("user_id", user.id);
 

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getApiUserId } from "@/lib/import/api-auth";
 import { createClient } from "@/lib/supabase/server";
+import { SPEND_TRANSACTIONS_TABLE } from "@/lib/spend-transaction-db";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -50,7 +51,7 @@ export async function DELETE(_request: Request, { params }: Params) {
   const supabase = await createClient();
 
   const { error: txError } = await supabase
-    .from("spend_transactions")
+    .from(SPEND_TRANSACTIONS_TABLE)
     .delete()
     .eq("import_batch_id", id)
     .eq("user_id", auth.userId);

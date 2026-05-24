@@ -9,7 +9,10 @@ import { saveDemoJob } from "@/lib/import/demo-jobs";
 import { deleteAllSpendData } from "@/lib/spend-data";
 import { createClient } from "@/lib/supabase/client";
 import type { Row } from "@/lib/csv-shared";
-import { toSpendTransactionInsert } from "@/lib/spend-transaction-db";
+import {
+  SPEND_TRANSACTIONS_TABLE,
+  toSpendTransactionInsert,
+} from "@/lib/spend-transaction-db";
 
 export type PersistIngestOptions = {
   filename: string;
@@ -99,7 +102,7 @@ export async function persistIngestedRows(
       toSpendTransactionInsert(r, user.id)
     );
 
-    const { error } = await supabase.from("spend_transactions").insert(chunk);
+    const { error } = await supabase.from(SPEND_TRANSACTIONS_TABLE).insert(chunk);
     if (error) {
       return {
         ok: false,
