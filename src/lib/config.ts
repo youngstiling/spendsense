@@ -11,6 +11,8 @@ export function isDemoModeClient(): boolean {
   if (typeof window !== "undefined") {
     const host = window.location.hostname;
     if (host === "localhost" || host === "127.0.0.1") return true;
+    // Hosted app (Vercel, etc.): use Supabase unless demo explicitly enabled
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL) return false;
   }
   return isDemoMode();
 }
