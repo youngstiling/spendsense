@@ -1,0 +1,229 @@
+"use client";
+
+import { SYSTEM_FIELDS } from "@/lib/import/fields";
+import type { AmountSourceMode, ColumnMapping, SystemFieldKey } from "@/lib/import/types";
+
+type MappingStatus = "auto" | "manual" | "missing" | "optional";
+
+function mappingStatus(
+  field: (typeof SYSTEM_FIELDS)[number],
+  mapping: ColumnMapping,
+  autoMapping: ColumnMapping
+): MappingStatus {
+  const value = mapping[field.key];
+  if (!value) {
+    return field.required ? "missing" : "optional";
+  }
+  if (autoMapping[field.key] === value) {
+    return "auto";
+  }
+  return "manual";
+}
+
+const statusBadge: Record<MappingStatus, { label: string; className: string } | null> = {
+  auto: { label: "Auto", className: "bg-emerald-100 text-emerald-800" },
+  manual: { label: "Manual", className: "bg-sky-100 text-sky-800" },
+  missing: { label: "Required", className: "bg-red-100 text-red-800" },
+  optional: null,
+};
+
+export function ColumnMapperUi({
+  headers,
+  mapping,
+  autoMapping,
+  onChange,
+}: {
+  headers: string[];
+  mapping: ColumnMapping;
+  autoMapping: ColumnMapping;
+  onChange: (m: ColumnMapping) => void;
+}) {
+  const options = ["", ...headers];
+  const amountSource = mapping.amountSource ?? "column";
+
+  function setAmountSource(mode: AmountSourceMode) {
+    if (mode === "debit_credit") {
+      onChange({
+        ...mapping,
+        amountSource: "debit_credit",
+        amount: undefined,
+      });
+    } else {
+      onChange({
+        ...mapping,
+        amountSource: "column",
+        debitColumn: undefined,
+        creditColumn: undefined,
+      });
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
+        <p className="text-sm font-medium text-slate-800">Amount source</p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setAmountSource("column")}
+            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+              amountSource === "column"
+                ? "bg-teal-600 text-white"
+                : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+            }`}
+          >
+            Single amount column
+          </button>
+          <button
+            type="button"
+            onClick={() => setAmountSource("debit_credit")}
+            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+              amountSource === "debit_credit"
+                ? "bg-teal-600 text-white"
+                : "bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+            }`}
+          >
+            Debit / credit columns
+          </button>
+        </div>
+        {amountSource === "debit_credit" && (
+          <p className="text-xs text-slate-500">
+            Uses debit first, then credit if debit is empty — typical for bank exports.
+          </p>
+        )}
+      </div>
+
+      <div className="space-y-3">
+        {SYSTEM_FIELDS.map((field) => {
+          if (field.key === "amount" && amountSource === "debit_credit") {
+            return null;
+          }
+
+          const status = mappingStatus(field, mapping, autoMapping);
+          const badge = statusBadge[status];
+
+          return (
+            <div
+              key={field.key}
+              className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4"
+            >
+              <div className="sm:w-44">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-slate-800">
+                    {field.label}
+                    {field.required && amountSource === "column" && (
+                      <span className="text-red-500 ml-0.5">*</span>
+                    )}
+                  </p>
+                  {badge && (
+                    <span
+                      className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded-full ${badge.className}`}
+                    >
+                      {badge.label}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500">{field.description}</p>
+              </div>
+              <select
+                value={mapping[field.key] ?? ""}
+                onChange={(e) =>
+                  onChange({
+                    ...mapping,
+                    [field.key]: e.target.value || undefined,
+                  })
+                }
+                className={`flex-1 rounded-lg border bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/30 ${
+                  status === "missing"
+                    ? "border-red-300"
+                    : status === "auto"
+                      ? "border-emerald-200"
+                      : "border-slate-200"
+                }`}
+              >
+                {options.map((h) => (
+                  <option key={h || "__skip"} value={h}>
+                    {h || "— Not mapped —"}
+                  </option>
+                ))}
+              </select>
+            </div>
+          );
+        })}
+
+        {amountSource === "debit_credit" && (
+          <>
+            {(["debitColumn", "creditColumn"] as const).map((key) => {
+              const label = key === "debitColumn" ? "Debit" : "Credit";
+              const autoVal = autoMapping[key];
+              const value = mapping[key] ?? "";
+              const siblingKey =
+                key === "debitColumn" ? "creditColumn" : "debitColumn";
+              const hasSibling = Boolean(mapping[siblingKey]);
+              let status: MappingStatus;
+              if (value) {
+                status = autoVal === value ? "auto" : "manual";
+              } else if (hasSibling) {
+                status = "optional";
+              } else {
+                status = "missing";
+              }
+              const badge = statusBadge[status];
+
+              return (
+                <div
+                  key={key}
+                  className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4"
+                >
+                  <div className="sm:w-44">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium text-slate-800">{label}</p>
+                      {badge && (
+                        <span
+                          className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded-full ${badge.className}`}
+                        >
+                          {badge.label}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      {key === "debitColumn" ? "Money out (spend)" : "Used if debit is empty"}
+                    </p>
+                  </div>
+                  <select
+                    value={value}
+                    onChange={(e) =>
+                      onChange({
+                        ...mapping,
+                        [key]: e.target.value || undefined,
+                      })
+                    }
+                    className="flex-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500/30"
+                  >
+                    {options.map((h) => (
+                      <option key={h || "__skip"} value={h}>
+                        {h || "— Not mapped —"}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              );
+            })}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function mappingConfidenceLabel(
+  mapping: ColumnMapping,
+  autoMapping: ColumnMapping = {}
+): Record<SystemFieldKey, "auto" | "manual" | "missing"> {
+  const out = {} as Record<SystemFieldKey, "auto" | "manual" | "missing">;
+  for (const f of SYSTEM_FIELDS) {
+    const status = mappingStatus(f, mapping, autoMapping);
+    out[f.key] = status === "optional" ? "manual" : status;
+  }
+  return out;
+}

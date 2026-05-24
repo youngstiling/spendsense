@@ -1,0 +1,21 @@
+date,pub,supplier,amount,category
+2026-01-05,Red Lion - Glasgow,Diageo Ltd,1245.50,Alcohol
+2026-01-08,Kings Arms - Edinburgh,BOOKER,842.10,Food
+2026-01-10,The Crown - Stirling,Heineken UK Ltd,978.33,Alcohol
+2026-01-12,Black Bull - Dundee,Brakes Catering,456.20,Food
+2026-01-14,Queens Head - Aberdeen,Amazon Business,120.45,Supplies
+2026-01-16,The Anchor - Perth,BT PLC,210.00,Utilities
+2026-01-18,White Hart - Inverness,Scottish Water,98.34,Utilities
+2026-01-20,The Swan - Ayr,Coca Cola Europacific,765.22,Soft Drinks
+2026-01-22,The Plough - Falkirk,Local Butcher,342.80,Food
+2026-01-24,Royal Oak - Paisley,JJ Food Service,612.45,Food
+2026-02-02,The Ship Inn - Oban,DIAGEO,1100.00,Alcohol
+2026-02-04,Fox & Hound - Hamilton,HEINEKEN,980.10,Alcohol
+2026-02-06,Red Lion - Glasgow,Booker Wholesale,754.22,Food
+2026-02-08,Kings Arms - Edinburgh,Brakes,522.80,Food
+2026-02-10,The Crown - Stirling,Amazon,88.30,Supplies
+2026-02-12,Black Bull - Dundee,British Gas,310.45,Utilities
+2026-02-14,Queens Head - Aberdeen,Local Bakery,145.00,Food
+2026-02-16,The Anchor - Perth,CleanCo,210.75,Supplies
+2026-02-18,White Hart - Inverness,Diageo PLC,1320.10,Alcohol
+2026-02-20,The Swan - Ayr,Heineken UK,890.60,Alcohol

@@ -1,0 +1,37 @@
+{
+  "name": "spendsense",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "dev:reset": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\" && next dev -p 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "generate:demo-csv": "node scripts/generate-demo-csv.js",
+    "generate:demo-csv:small": "node scripts/generate-demo-csv.js --small"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.49.8",
+    "csv-parse": "^6.2.1",
+    "currency.js": "^2.0.4",
+    "date-fns": "^4.2.1",
+    "fuse.js": "^7.3.0",
+    "next": "^15.3.3",
+    "papaparse": "^5.5.2",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0",
+    "recharts": "^2.15.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "@types/papaparse": "^5.3.16",
+    "@types/react": "^19.1.4",
+    "@types/react-dom": "^19.1.5",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.8.3"
+  }
+}
