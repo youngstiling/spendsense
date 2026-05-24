@@ -59,6 +59,55 @@ export function computeSpendByMonth(rows: InsightRow[]): ChartDatum[] {
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
+export type SpendTrendPoint = { date: string; total: number };
+
+export type SpendTrendSummary = {
+  trendData: SpendTrendPoint[];
+  trendInsight: "Stable" | "Increasing" | "Decreasing";
+  trendLabel: string;
+};
+
+function sortTrendDates(a: SpendTrendPoint, b: SpendTrendPoint): number {
+  if (a.date === "Unknown" || b.date === "Unknown") {
+    return a.date.localeCompare(b.date);
+  }
+  return new Date(a.date).getTime() - new Date(b.date).getTime();
+}
+
+/** Group spend by transaction date; compare first vs last day for trend. */
+export function computeSpendTrendByDate(
+  rows: InsightRow[]
+): SpendTrendSummary | null {
+  const trendDataMap = rows.reduce<Record<string, number>>((acc, t) => {
+    const date = t.date?.trim() || "Unknown";
+    acc[date] = (acc[date] ?? 0) + t.amount;
+    return acc;
+  }, {});
+
+  const trendData = Object.entries(trendDataMap)
+    .map(([date, total]) => ({ date, total }))
+    .sort(sortTrendDates);
+
+  if (!trendData.length) return null;
+
+  let trendInsight: SpendTrendSummary["trendInsight"] = "Stable";
+  let trendLabel = "Stable";
+
+  if (trendData.length >= 2) {
+    const first = trendData[0]!.total;
+    const last = trendData[trendData.length - 1]!.total;
+    if (last > first) {
+      trendInsight = "Increasing";
+      trendLabel = "Increasing";
+    } else if (last < first) {
+      trendInsight = "Decreasing";
+      trendLabel = "Decreasing";
+    }
+  }
+
+  return { trendData, trendInsight, trendLabel };
+}
+
 export function computeSpendBySupplier(rows: InsightRow[]): ChartDatum[] {
   const bySupplier: Record<string, number> = {};
   for (const row of rows) {

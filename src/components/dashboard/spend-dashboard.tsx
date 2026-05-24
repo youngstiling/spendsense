@@ -10,6 +10,7 @@ import {
   computeSpendByCategory,
   computeSpendByMonth,
   computeSpendByPub,
+  computeSpendTrendByDate,
   computeSpendBySupplier,
   filterRowsByPub,
   listPubNames,
@@ -28,6 +29,7 @@ import { InsightsPanel } from "./insights-panel";
 import { KPICard } from "./kpi-card";
 import { BeerVsFoodPanel } from "./beer-vs-food-panel";
 import { PubPerformancePanel } from "./pub-performance-panel";
+import { SpendTrendPanel } from "./spend-trend-panel";
 
 const SpendCharts = dynamic(
   () => import("./spend-charts").then((m) => m.SpendCharts),
@@ -81,6 +83,8 @@ export function SpendDashboard({ enrichedData }: { enrichedData: Row[] }) {
     () => computeBeerVsFood(scoped, kpis.totalSpend),
     [scoped, kpis.totalSpend]
   );
+
+  const spendTrend = useMemo(() => computeSpendTrendByDate(scoped), [scoped]);
 
   return (
     <div className="space-y-8">
@@ -174,6 +178,8 @@ export function SpendDashboard({ enrichedData }: { enrichedData: Row[] }) {
       <PubPerformancePanel performance={pubPerformance} />
 
       <BeerVsFoodPanel comparison={beerVsFood} />
+
+      <SpendTrendPanel summary={spendTrend} />
 
       <SpendCharts
         pubData={pubData}
