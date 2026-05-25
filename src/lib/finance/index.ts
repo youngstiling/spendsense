@@ -1,18 +1,27 @@
 export {
   runAuditReport,
   checkDrift,
+  detectDrift,
   trustScore,
   getEngineTotalSpend,
   buildAuditLog,
+  auditLog,
+  logMetric,
 } from "./audit-engine";
 export type {
   AuditEntry,
   AuditReport,
   DriftResult,
+  DriftDetection,
   AuditSource,
   AuditMetric,
+  LoggedMetric,
 } from "./audit-engine";
 export type { SpendTransaction } from "@/lib/supabase/schema";
+export { computeTotals } from "./compute-totals";
+export type { SpendTotals } from "./compute-totals";
+export { validateRow } from "./validate-row";
+export type { ValidatableSpendRow, ValidatedSpendRow } from "./validate-row";
 export {
   parseSpendTransactions,
   rowsToSpendTransactions,

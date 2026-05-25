@@ -17,6 +17,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { spendTransactionsToEngineRows } from "./parse-transactions";
 import type { Transaction } from "./types";
+import { validateRow, type ValidatableSpendRow } from "./validate-row";
 
 async function queryDbRows(
   userId: string,
@@ -36,6 +37,9 @@ async function queryDbRows(
 async function querySpendTransactionsServer(
   userId: string
 ): Promise<SpendTransaction[]> {
+  const strict = await queryValidatedSpendTransactions(userId);
+  if (strict.length) return strict;
+
   const full = await queryDbRows(userId, SPEND_TRANSACTION_SELECT_FULL);
   if (full.length) return spendTransactionsFromDbRows(full);
 
@@ -53,6 +57,26 @@ async function querySpendTransactionsServer(
   if (minimal.length) return spendTransactionsFromDbRows(minimal);
 
   return [];
+}
+
+async function queryValidatedSpendTransactions(
+  userId: string
+): Promise<SpendTransaction[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from(SPEND_TRANSACTIONS_TABLE)
+    .select("*")
+    .eq(SpendTxCol.userId, userId)
+    .order(SpendTxCol.date, { ascending: true });
+
+  if (error) throw error;
+  if (!data?.length) return [];
+
+  return data.map((row) =>
+    spendTransactionFromDbRow(
+      validateRow(row as ValidatableSpendRow) as SpendTransactionDbRow
+    )
+  );
 }
 
 /** Primary server fetch — canonical SpendTransaction[]. */

@@ -1,9 +1,28 @@
 import type { SpendTransaction } from "@/lib/supabase/schema";
+import { computeTotals } from "./compute-totals";
 import type { Transaction } from "./types";
 
 export type AuditSource = "SQL" | "ENGINE";
 
 export type AuditMetric = "TOTAL_SPEND";
+
+export type LoggedMetric = {
+  name: string;
+  value: number;
+  source: string;
+  time: number;
+};
+
+export const auditLog: LoggedMetric[] = [];
+
+export function logMetric(name: string, value: number, source: string) {
+  auditLog.push({
+    name,
+    value,
+    source,
+    time: Date.now(),
+  });
+}
 
 export type AuditEntry = {
   metric: AuditMetric;
@@ -13,7 +32,17 @@ export type AuditEntry = {
   timestamp: string;
 };
 
-export type DriftStatus = "INCOMPLETE" | "DRIFT" | "OK";
+export type DriftStatus =
+  | "INCOMPLETE"
+  | "PERFECT"
+  | "ACCEPTABLE"
+  | "WARNING"
+  | "CRITICAL";
+
+export type DriftDetection = {
+  drift: number;
+  status: Exclude<DriftStatus, "INCOMPLETE">;
+};
 
 export type DriftResult = {
   status: DriftStatus;
@@ -39,6 +68,8 @@ export function createAuditEntry(
   value: number,
   rowCount: number
 ): AuditEntry {
+  logMetric(metric, value, source);
+
   return {
     metric,
     source,
@@ -52,6 +83,9 @@ export function createAuditEntry(
 export function getEngineTotalSpend(
   data: SpendTransaction[] | Transaction[]
 ): number {
+  if (data.length && "pub_name" in data[0]) {
+    return computeTotals(data as SpendTransaction[]).total;
+  }
   return data.reduce((sum, row) => sum + Number(row.amount) || 0, 0);
 }
 
@@ -86,28 +120,40 @@ export function checkDrift(
     return { status: "INCOMPLETE" };
   }
 
-  if (sql === 0 && engine === 0) {
-    return { status: "OK", diff: 0, percent: 0, sql, engine };
-  }
-
   const diff = Math.abs(sql - engine);
-  const percent = sql > 0 ? (diff / sql) * 100 : engine > 0 ? 100 : 0;
+  const { drift, status } = detectDrift(sql, engine);
 
   return {
-    status: percent > 1 ? "DRIFT" : "OK",
+    status,
     diff,
-    percent,
+    percent: drift,
     sql,
     engine,
   };
 }
 
+export function detectDrift(sql: number, engine: number): DriftDetection {
+  const diff = Math.abs(sql - engine);
+  const percent = sql === 0 ? (engine === 0 ? 0 : 100) : (diff / sql) * 100;
+
+  return {
+    drift: percent,
+    status:
+      percent === 0
+        ? "PERFECT"
+        : percent < 1
+          ? "ACCEPTABLE"
+          : percent < 5
+            ? "WARNING"
+            : "CRITICAL",
+  };
+}
+
 export function trustScore(drift: DriftResult): number {
   if (drift.status === "INCOMPLETE") return 0;
-  if (drift.status === "OK") return 100;
-  const percent = drift.percent ?? 100;
-  if (percent < 2) return 90;
-  if (percent < 5) return 70;
+  if (drift.status === "PERFECT") return 100;
+  if (drift.status === "ACCEPTABLE") return 98;
+  if (drift.status === "WARNING") return 70;
   return 40;
 }
 

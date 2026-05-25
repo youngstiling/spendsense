@@ -11,11 +11,13 @@ export function AuditTrustPanel({ report }: { report: AuditReport | null }) {
   const engineEntry = entries.find((e) => e.source === "ENGINE");
 
   const statusStyles =
-    drift.status === "OK"
+    drift.status === "PERFECT" || drift.status === "ACCEPTABLE"
       ? "border-emerald-200 bg-emerald-50 text-emerald-900"
-      : drift.status === "DRIFT"
+      : drift.status === "WARNING"
         ? "border-amber-300 bg-amber-50 text-amber-950"
-        : "border-slate-200 bg-slate-50 text-slate-600";
+        : drift.status === "CRITICAL"
+          ? "border-red-300 bg-red-50 text-red-950"
+          : "border-slate-200 bg-slate-50 text-slate-600";
 
   return (
     <section className="mt-8 rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
@@ -40,15 +42,15 @@ export function AuditTrustPanel({ report }: { report: AuditReport | null }) {
       <div
         className={`mt-4 rounded-xl border px-4 py-3 text-sm font-medium ${statusStyles}`}
       >
-        {drift.status === "OK" && (
+        {(drift.status === "PERFECT" || drift.status === "ACCEPTABLE") && (
           <span>
-            Reconciliation OK — engine matches SQL within 1% (
+            {drift.status} — engine matches SQL within 1% (
             {drift.percent?.toFixed(2)}% drift)
           </span>
         )}
-        {drift.status === "DRIFT" && (
+        {(drift.status === "WARNING" || drift.status === "CRITICAL") && (
           <span>
-            Drift detected — {drift.percent?.toFixed(2)}% difference (
+            {drift.status} drift — {drift.percent?.toFixed(2)}% difference (
             {fmtGbp(drift.diff ?? 0)} absolute)
           </span>
         )}

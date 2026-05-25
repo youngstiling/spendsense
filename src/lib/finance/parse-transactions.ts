@@ -6,25 +6,38 @@ import {
 } from "@/lib/supabase/schema";
 import { parseTransactionDate } from "./month-utils";
 import type { Transaction } from "./types";
+import { validateRow, type ValidatableSpendRow } from "./validate-row";
 
 type RawRow = Record<string, unknown>;
 
-/** Raw/API/CSV row → canonical SpendTransaction. */
+/** Raw/API/CSV row → canonical SpendTransaction (skips invalid rows). */
 export function rowToSpendTransaction(raw: RawRow): SpendTransaction | null {
-  const dateStr = String(raw.date ?? raw.transaction_date ?? "").slice(0, 10);
-  if (!dateStr) return null;
+  try {
+    return rowToSpendTransactionStrict(raw);
+  } catch {
+    return null;
+  }
+}
+
+/** Throws if pub_name, date, or amount are invalid. */
+export function rowToSpendTransactionStrict(
+  raw: RawRow
+): SpendTransaction {
+  const v = validateRow({
+    ...(raw as ValidatableSpendRow),
+    date: String(raw.date ?? raw.transaction_date ?? "").slice(0, 10),
+  });
 
   return spendTransactionFromDbRow({
     id: String(raw.id ?? ""),
-    date: dateStr,
+    date: v.date,
     supplier: String(raw.supplier ?? "Unknown"),
     canonical_supplier: String(
       raw.canonical_supplier ?? raw.canonicalSupplier ?? raw.supplier ?? "Unknown"
     ),
     category: String(raw.category ?? "uncategorised"),
-    amount: Number(raw.amount) || 0,
-    pub: raw.pub as string | null | undefined,
-    pub_name: raw.pub_name as string | null | undefined,
+    amount: v.amount,
+    pub_name: v.pub_name,
   });
 }
 
