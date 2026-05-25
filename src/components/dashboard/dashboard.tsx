@@ -6,9 +6,7 @@ import { AppNav } from "@/components/app-nav";
 import { SpendDashboard } from "@/components/dashboard/spend-dashboard";
 import {
   clearStoredRows,
-  loadQuickDemoRows,
   loadStoredRows,
-  replaceDemoRows,
 } from "@/lib/config";
 import { usesSupabaseAsDataSourceClient } from "@/lib/data-source";
 import { enrichTransactions } from "@/lib/brand-category";
@@ -48,11 +46,7 @@ export default function Dashboard() {
       } else if (error) {
         console.warn("[dashboard] spend_transactions:", error);
       }
-      if (fromDb.length > 0) {
-        setRows(fromDb);
-        return;
-      }
-      setRows(loadStoredRows());
+      setRows(fromDb);
       return;
     }
 
@@ -69,13 +63,6 @@ export default function Dashboard() {
       cancelled = true;
     };
   }, [refreshData]);
-
-  const loadDemoData = () => {
-    setSchemaError(null);
-    const demo = loadQuickDemoRows();
-    replaceDemoRows(demo);
-    setRows(demo);
-  };
 
   const clearData = async () => {
     if (supabaseSource) {
@@ -127,24 +114,27 @@ export default function Dashboard() {
             </h1>
             <p className="mx-auto mt-3 max-w-md text-sm text-slate-600">
               {supabaseSource
-                ? "No spend data yet. Load demo data to explore the dashboard, log in to sync with Supabase, or import a CSV."
-                : "No data yet. Start with demo data or upload a CSV (demo mode uses browser storage only)."}
+                ? "No spend data yet. Log in to sync with Supabase or import a CSV."
+                : "No data yet. Upload a CSV (demo mode uses browser storage only)."}
             </p>
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-              <button
-                type="button"
-                onClick={loadDemoData}
-                className="rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
-              >
-                Load demo data
-              </button>
-              <Link
-                href={supabaseSource ? "/login" : "/import"}
-                className="inline-flex rounded-xl border border-turquoise-200 bg-turquoise-50 px-5 py-2.5 text-sm font-semibold text-turquoise-900 transition hover:bg-turquoise-100"
-              >
-                {supabaseSource ? "Log in" : "Import CSV"}
-              </Link>
               {supabaseSource && (
+                <Link
+                  href="/login"
+                  className="inline-flex rounded-xl border border-turquoise-200 bg-turquoise-50 px-5 py-2.5 text-sm font-semibold text-turquoise-900 transition hover:bg-turquoise-100"
+                >
+                  Log in
+                </Link>
+              )}
+              {supabaseSource && (
+                <Link
+                  href="/import"
+                  className="inline-flex rounded-xl bg-turquoise-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-turquoise-700"
+                >
+                  Import CSV
+                </Link>
+              )}
+              {!supabaseSource && (
                 <Link
                   href="/import"
                   className="inline-flex rounded-xl bg-turquoise-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-turquoise-700"
