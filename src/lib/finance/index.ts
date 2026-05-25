@@ -41,6 +41,7 @@ export {
   getTransactionsClient,
 } from "./get-transactions-client";
 export { runFinancialEngine, runCachedFinancialEngine } from "./run-financial-engine";
+export { computePubBenchmarks } from "./engines/benchmark";
 export { generateInsights } from "./generate-ai-insights";
 export { answerFinanceQuestion } from "./chat-query";
 export type * from "./types";

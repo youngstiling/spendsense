@@ -52,6 +52,32 @@ export type BudgetVariance = {
   flagged: boolean;
 };
 
+export type BenchmarkStatus = "ABOVE_AVERAGE" | "IN_LINE" | "BELOW_AVERAGE";
+
+export type PubBenchmark = {
+  pubName: string;
+  currentMonth: string;
+  rank: number;
+  currentSpend: number;
+  portfolioAverage: number;
+  variancePercent: number;
+  sixMonthAverage: number;
+  totalSpend: number;
+  monthsActive: number;
+  status: BenchmarkStatus;
+  flagged: boolean;
+};
+
+export type BenchmarkSummary = {
+  currentMonth: string;
+  pubCount: number;
+  portfolioTotal: number;
+  averageSpendPerPub: number;
+  highestSpender: string | null;
+  lowestSpender: string | null;
+  highestVariancePercent: number;
+};
+
 export type FinancialRisk = {
   pubName: string;
   riskScore: number;
@@ -65,6 +91,8 @@ export type FinancialEngineResult = {
   portfolioOverspend: PortfolioOverspend | null;
   supplierInflations: SupplierInflation[];
   budgetVariances: BudgetVariance[];
+  pubBenchmarks: PubBenchmark[];
+  benchmarkSummary: BenchmarkSummary | null;
   topRisks: FinancialRisk[];
   overview: {
     totalSpendThisMonth: number;

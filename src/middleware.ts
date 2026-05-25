@@ -6,6 +6,7 @@ const OPEN_PATH_PREFIXES = [
   "/dashboard",
   "/overview",
   "/control-room",
+  "/benchmark",
   "/spend-increases",
   "/overspending",
   "/suppliers",

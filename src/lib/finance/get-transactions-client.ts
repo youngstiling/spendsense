@@ -1,4 +1,4 @@
-import { loadStoredRows } from "@/lib/config";
+import { clearStoredRows, loadStoredRows } from "@/lib/config";
 import type { Row } from "@/lib/csv-shared";
 import { usesSupabaseAsDataSourceClient } from "@/lib/data-source";
 import { fetchSpendTransactions } from "@/lib/spend-data";
@@ -15,8 +15,8 @@ export async function getSpendTransactionsClient(): Promise<SpendTransaction[]> 
 
   if (usesSupabaseAsDataSourceClient()) {
     const { rows } = await fetchSpendTransactions();
-    const raw = rows.length > 0 ? rows : loadStoredRows();
-    return rowsToSpendTransactions(raw);
+    clearStoredRows();
+    return rowsToSpendTransactions(rows);
   }
 
   return rowsToSpendTransactions(loadStoredRows());

@@ -22,6 +22,27 @@ export function answerFinanceQuestion(
     };
   }
 
+  if (/benchmark|rank|peer|average per pub|vs average|compare pub/.test(q)) {
+    const summary = result.benchmarkSummary;
+    if (!summary || !result.pubBenchmarks.length) {
+      return {
+        matched: true,
+        answer: "No benchmark data is available yet. Import spend data for at least one month first.",
+      };
+    }
+    const top3 = result.pubBenchmarks.slice(0, 3);
+    const list = top3
+      .map(
+        (p) =>
+          `${p.rank}. ${p.pubName}: £${Math.round(p.currentSpend).toLocaleString("en-GB")} (${p.variancePercent >= 0 ? "+" : ""}${p.variancePercent.toFixed(1)}% vs average)`
+      )
+      .join("\n");
+    return {
+      matched: true,
+      answer: `Benchmark average for ${summary.currentMonth}: £${Math.round(summary.averageSpendPerPub).toLocaleString("en-GB")} per pub.\n${list}`,
+    };
+  }
+
   if (/overspend|over spend|exceed/.test(q)) {
     const top = result.pubOverspends.filter((p) => p.flagged)[0];
     if (!top) {

@@ -79,6 +79,29 @@ export function OverviewPage() {
           />
         </div>
       )}
+      {engine.benchmarkSummary && (
+        <div className="mt-6 grid gap-4 lg:grid-cols-3">
+          <KpiCard
+            label="Benchmark average"
+            value={fmtGbp(engine.benchmarkSummary.averageSpendPerPub)}
+            sub={`${engine.benchmarkSummary.pubCount} pubs in peer set`}
+          />
+          <KpiCard
+            label="Highest vs benchmark"
+            value={engine.benchmarkSummary.highestSpender ?? "—"}
+            sub={fmtPct(engine.benchmarkSummary.highestVariancePercent)}
+            accent={
+              engine.benchmarkSummary.highestVariancePercent > 20
+                ? "danger"
+                : "turquoise"
+            }
+          />
+          <KpiCard
+            label="Lowest spender"
+            value={engine.benchmarkSummary.lowestSpender ?? "—"}
+          />
+        </div>
+      )}
     </>
   );
 }

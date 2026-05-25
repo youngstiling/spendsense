@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { computePubBenchmarks } from "./engines/benchmark";
 import { computeBudgetVariance } from "./engines/budget-variance";
 import { computeTopFinancialRisks } from "./engines/financial-risks";
 import { computePortfolioOverspend } from "./engines/portfolio-overspend";
@@ -18,6 +19,7 @@ export function runFinancialEngine(txs: Transaction[]): FinancialEngineResult {
   const portfolioOverspend = computePortfolioOverspend(txs, pubOverspends);
   const supplierInflations = computeSupplierInflation(txs);
   const budgetVariances = computeBudgetVariance(txs);
+  const benchmark = computePubBenchmarks(txs);
   const topRisks = computeTopFinancialRisks(
     txs,
     spendIncreases,
@@ -46,6 +48,8 @@ export function runFinancialEngine(txs: Transaction[]): FinancialEngineResult {
     portfolioOverspend,
     supplierInflations,
     budgetVariances,
+    pubBenchmarks: benchmark.benchmarks,
+    benchmarkSummary: benchmark.summary,
     topRisks,
     overview: {
       totalSpendThisMonth,

@@ -2,7 +2,7 @@ import type { FinancialEngineResult } from "./types";
 
 function ruleBasedInsights(result: FinancialEngineResult): string[] {
   const bullets: string[] = [];
-  const { overview, portfolioOverspend, highlights } = result;
+  const { overview, portfolioOverspend, benchmarkSummary, highlights } = result;
 
   if (overview.overspendingPubsCount > 0) {
     bullets.push(
@@ -13,6 +13,12 @@ function ruleBasedInsights(result: FinancialEngineResult): string[] {
   if (portfolioOverspend && portfolioOverspend.variancePercent > 10) {
     bullets.push(
       `Portfolio spend is ${portfolioOverspend.variancePercent.toFixed(0)}% above the six-month baseline, with £${Math.round(portfolioOverspend.excessSpend).toLocaleString("en-GB")} in excess spend this period.`
+    );
+  }
+
+  if (benchmarkSummary && benchmarkSummary.highestVariancePercent > 20) {
+    bullets.push(
+      `${benchmarkSummary.highestSpender} is the highest spender versus peer benchmark at ${benchmarkSummary.highestVariancePercent.toFixed(0)}% above the portfolio average.`
     );
   }
 
@@ -53,6 +59,8 @@ export async function generateInsights(
     referenceMonth: result.referenceMonth,
     overview: result.overview,
     topRisks: result.topRisks.slice(0, 3),
+    benchmarks: result.pubBenchmarks.slice(0, 5),
+    benchmarkSummary: result.benchmarkSummary,
     overspending: result.pubOverspends.filter((p) => p.flagged).slice(0, 5),
     inflation: result.supplierInflations.filter((s) => s.flagged).slice(0, 5),
     spendSpikes: result.spendIncreases.filter((s) => s.flagged).slice(0, 5),

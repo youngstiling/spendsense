@@ -39,6 +39,7 @@ export default function Dashboard() {
     if (supabaseSource) {
       const { rows: fromDb, error, schemaHint, usingLegacySchema } =
         await fetchSpendTransactions();
+      clearStoredRows();
       if (error && !usingLegacySchema) {
         setSchemaError(schemaHint || error || "Database schema mismatch.");
       } else if (usingLegacySchema && schemaHint && fromDb.length > 0) {

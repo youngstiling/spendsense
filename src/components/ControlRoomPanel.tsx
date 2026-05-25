@@ -4,6 +4,8 @@ import { useCallback, useState } from "react";
 import KPIGrid, { type KPI } from "@/components/KPIGrid";
 import { useFinance } from "@/components/saas/finance-provider";
 import { useLiveMetrics } from "@/hooks/use-live-metrics";
+import { clearStoredRows } from "@/lib/config";
+import { deleteAllSpendData } from "@/lib/spend-data";
 
 type ControlRoomData = {
   total: number;
@@ -35,8 +37,10 @@ function formatPercent(value: number): string {
 }
 
 export default function ControlRoomPanel() {
-  const { engine } = useFinance();
+  const { engine, refresh } = useFinance();
   const [proof, setProof] = useState<ProofData | null>(null);
+  const [clearing, setClearing] = useState(false);
+  const [clearError, setClearError] = useState<string | null>(null);
 
   const loadKPIs = useCallback(async () => {
     const metric = {
@@ -84,6 +88,25 @@ export default function ControlRoomPanel() {
 
     const result = (await res.json()) as ProofData;
     setProof(result);
+  }
+
+  async function handleClearData() {
+    setClearing(true);
+    setClearError(null);
+    try {
+      const { error, schemaHint } = await deleteAllSpendData();
+      if (error || schemaHint) {
+        throw new Error(schemaHint || error || "Could not clear data.");
+      }
+
+      clearStoredRows();
+      setProof(null);
+      await refresh();
+    } catch (err) {
+      setClearError(err instanceof Error ? err.message : "Could not clear data.");
+    } finally {
+      setClearing(false);
+    }
   }
 
   if (error) {
@@ -200,6 +223,12 @@ export default function ControlRoomPanel() {
         </div>
       </div>
 
+      {clearError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          {clearError}
+        </div>
+      )}
+
       <KPIGrid data={kpiData} />
 
       <article className="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-sm ring-1 ring-slate-900/5">
@@ -227,6 +256,14 @@ export default function ControlRoomPanel() {
             className="mt-5 rounded-xl bg-turquoise-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-turquoise-700"
           >
             Proof
+          </button>
+          <button
+            type="button"
+            onClick={handleClearData}
+            disabled={clearing}
+            className="ml-3 mt-5 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-100 disabled:opacity-50"
+          >
+            {clearing ? "Clearing..." : "Clear data"}
           </button>
 
           {proof && (
