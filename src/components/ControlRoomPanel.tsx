@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import KPIGrid, { type KPI } from "@/components/KPIGrid";
 import { useFinance } from "@/components/saas/finance-provider";
+import { useLiveMetrics } from "@/hooks/use-live-metrics";
 
 type ControlRoomData = {
   total: number;
@@ -35,44 +36,39 @@ function formatPercent(value: number): string {
 
 export default function ControlRoomPanel() {
   const { engine } = useFinance();
-  const [data, setData] = useState<ControlRoomData | null>(null);
   const [proof, setProof] = useState<ProofData | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    void load();
-  }, [engine]);
-
-  async function load() {
-    setError(null);
+  const loadKPIs = useCallback(async () => {
     const metric = {
       metric: "SPEND_INCREASE",
       value: engine?.highlights.biggestIncrease?.percentIncrease ?? 0,
       context: { pub: engine?.highlights.biggestIncrease?.pubName ?? "Portfolio" },
     };
 
-    try {
-      const narrativeRes = await fetch("/api/narrative", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(metric),
-      });
+    const narrativeRes = await fetch("/api/narrative", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(metric),
+    });
 
-      if (!narrativeRes.ok) {
-        throw new Error("Could not load control room narrative");
-      }
-
-      const narrative = (await narrativeRes.json()) as ControlRoomData;
-      setData({
-        total: engine?.overview.totalSpendThisMonth ?? narrative.total,
-        risks: engine?.topRisks.length ?? narrative.risks,
-        narrative: narrative.narrative,
-        source: narrative.source,
-      });
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not load panel");
+    if (!narrativeRes.ok) {
+      throw new Error("Could not load control room narrative");
     }
-  }
+
+    const narrative = (await narrativeRes.json()) as ControlRoomData;
+    return {
+      total: engine?.overview.totalSpendThisMonth ?? narrative.total,
+      risks: engine?.topRisks.length ?? narrative.risks,
+      narrative: narrative.narrative,
+      source: narrative.source,
+    };
+  }, [engine]);
+
+  const {
+    data,
+    lastUpdated,
+    error,
+  } = useLiveMetrics(loadKPIs, 3000);
 
   async function handleProof() {
     const res = await fetch("/api/proof", {
@@ -82,7 +78,7 @@ export default function ControlRoomPanel() {
     });
 
     if (!res.ok) {
-      setError("Could not load proof");
+      console.error("Could not load proof");
       return;
     }
 
@@ -93,7 +89,7 @@ export default function ControlRoomPanel() {
   if (error) {
     return (
       <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-800">
-        {error}
+        {error instanceof Error ? error.message : "Could not load panel"}
       </div>
     );
   }
@@ -192,6 +188,12 @@ export default function ControlRoomPanel() {
           <p className="mt-1 text-sm text-slate-600">
             Live spend metrics with proof, drift, and narrative context.
           </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs font-medium text-slate-500">
+            <span className="text-emerald-600">LIVE</span>
+            <span>
+              Last updated: {lastUpdated?.toLocaleTimeString("en-GB") ?? "—"}
+            </span>
+          </div>
         </div>
         <div className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
           Verified
