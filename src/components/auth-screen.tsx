@@ -2,9 +2,11 @@ import type { ReactNode } from "react";
 
 export function AuthScreen({
   title,
+  subtitle,
   children,
 }: {
   title: string;
+  subtitle?: string;
   children: ReactNode;
 }) {
   return (
@@ -12,6 +14,7 @@ export function AuthScreen({
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 shadow-sm text-center">
         <p className="text-sm font-medium text-turquoise-700">Spend Intelligence</p>
         <h1 className="mt-2 text-2xl font-semibold text-slate-900">{title}</h1>
+        {subtitle && <p className="mt-2 text-sm leading-6 text-slate-600">{subtitle}</p>}
         <div className="mt-6">{children}</div>
       </div>
     </main>

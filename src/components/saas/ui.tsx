@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { useFinance } from "./finance-provider";
 import { fmtGbp } from "./format";
@@ -140,17 +141,48 @@ export function DataTable({
 }
 
 export function EmptyState() {
-  const { loadDemo } = useFinance();
   return (
-    <div className="flex min-h-[360px] flex-col items-center justify-center rounded-2xl border border-slate-200/80 bg-white p-12 text-center shadow-sm">
-      <p className="text-slate-600">No spend data loaded.</p>
-      <button
-        type="button"
-        onClick={loadDemo}
-        className="mt-4 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-slate-800"
-      >
-        Load demo data
-      </button>
+    <div className="rounded-2xl border border-slate-200/80 bg-white p-8 text-center shadow-sm">
+      <div className="mx-auto max-w-2xl">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-turquoise-700">
+          First step
+        </p>
+        <h2 className="mt-2 text-2xl font-semibold text-slate-900">
+          Upload spend data to unlock the engines
+        </h2>
+        <p className="mt-3 text-sm leading-6 text-slate-600">
+          SpendSense needs a CSV with date, supplier, amount, category, and pub
+          columns. Once uploaded, the dashboard will calculate benchmarks,
+          overspend, supplier inflation, budget variance, and financial risks.
+        </p>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <Link
+            href="/upload"
+            className="rounded-xl bg-turquoise-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-turquoise-700"
+          >
+            Upload CSV
+          </Link>
+          <Link
+            href="/import"
+            className="rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+          >
+            Advanced import
+          </Link>
+        </div>
+        <div className="mt-8 grid gap-3 text-left sm:grid-cols-3">
+          {[
+            ["1", "Upload", "Drop in supplier spend rows."],
+            ["2", "Map", "We clean dates, amounts, and suppliers."],
+            ["3", "Act", "See the pubs and costs to review first."],
+          ].map(([step, title, copy]) => (
+            <div key={step} className="rounded-xl bg-slate-50 p-4">
+              <p className="text-xs font-bold text-turquoise-700">Step {step}</p>
+              <p className="mt-1 text-sm font-semibold text-slate-900">{title}</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500">{copy}</p>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

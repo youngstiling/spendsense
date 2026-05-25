@@ -71,8 +71,8 @@ export function CsvDropzoneUpload() {
 
         const skippedNote =
           skipped > 0 ? ` ${skipped} row${skipped === 1 ? "" : "s"} skipped.` : "";
-        setStatus(`Imported ${result.inserted} rows.${skippedNote} Redirecting...`);
-        router.push("/dashboard");
+        setStatus(`Imported ${result.inserted} rows.${skippedNote} Opening insights...`);
+        router.push("/overview");
       } catch (err: unknown) {
         setIsError(true);
         setStatus(err instanceof Error ? err.message : "Upload failed.");
@@ -126,21 +126,28 @@ export function CsvDropzoneUpload() {
             e.target.value = "";
           }}
         />
-        <p className="text-sm font-medium text-slate-800">
-          {busy ? "Processing..." : "Drag and drop a CSV file here"}
+        <p className="text-sm font-semibold text-slate-800">
+          {busy ? "Processing..." : "Drop your spend CSV here"}
         </p>
-        <p className="text-xs text-slate-500 mt-2">or click to browse - .csv only</p>
+        <p className="mt-2 text-xs text-slate-500">
+          or click to browse - CSV only, append by default
+        </p>
       </div>
 
-      <label className="flex items-center gap-2 text-sm text-slate-600">
+      <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-600">
         <input
           type="checkbox"
           checked={replaceExisting}
           onChange={(e) => setReplaceExisting(e.target.checked)}
           disabled={busy}
-          className="rounded border-slate-300"
+          className="mt-0.5 rounded border-slate-300"
         />
-        Replace existing data (otherwise append)
+        <span>
+          <span className="font-medium text-slate-800">Replace existing data</span>
+          <span className="block text-xs text-slate-500">
+            Leave unticked to add this CSV onto the existing months.
+          </span>
+        </span>
       </label>
 
       {status && (

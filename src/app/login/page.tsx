@@ -74,7 +74,7 @@ export default function LoginPage() {
 
   if (status === "checking") {
     return (
-      <AuthScreen title="Login">
+      <AuthScreen title="Checking your session">
         <AuthSpinner label="Checking your session…" />
       </AuthScreen>
     );
@@ -82,7 +82,10 @@ export default function LoginPage() {
 
   if (status === "sent") {
     return (
-      <AuthScreen title="Check your email">
+      <AuthScreen
+        title="Check your email"
+        subtitle="Use the secure magic link to open your private spend workspace."
+      >
         <p className="text-sm text-slate-600">
           We&apos;ve sent you a secure login link
           {email ? (
@@ -120,10 +123,13 @@ export default function LoginPage() {
     );
   }
 
-  const buttonLabel = status === "loading" ? "Sending..." : "Send Magic Link";
+  const buttonLabel = status === "loading" ? "Sending..." : "Send secure login link";
 
   return (
-    <AuthScreen title="Login">
+    <AuthScreen
+      title="Welcome to SpendSense"
+      subtitle="Sign in to upload CSVs, benchmark pubs, and track supplier cost risk."
+    >
       <form onSubmit={handleSubmit} className="space-y-4 text-left">
         <div>
           <label htmlFor="email" className="mb-1 block text-sm font-medium text-slate-700">
@@ -152,6 +158,17 @@ export default function LoginPage() {
       {message && status === "error" && (
         <p className="mt-4 text-left text-sm text-red-600">{message}</p>
       )}
+
+      <div className="mt-6 rounded-xl bg-slate-50 p-4 text-left">
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+          First 5 minutes
+        </p>
+        <ul className="mt-3 space-y-2 text-xs leading-5 text-slate-600">
+          <li>1. Sign in with your work email.</li>
+          <li>2. Upload a spend CSV.</li>
+          <li>3. Open Benchmark and Overview for the first signals.</li>
+        </ul>
+      </div>
 
       <Link
         href="/"
