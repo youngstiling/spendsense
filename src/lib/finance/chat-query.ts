@@ -27,19 +27,19 @@ export function answerFinanceQuestion(
     if (!summary || !result.pubBenchmarks.length) {
       return {
         matched: true,
-        answer: "No benchmark data is available yet. Import spend data for at least one month first.",
+        answer: "No spend-pattern benchmark is available yet. Import spend data for at least one month first.",
       };
     }
     const top3 = result.pubBenchmarks.slice(0, 3);
     const list = top3
       .map(
         (p) =>
-          `${p.rank}. ${p.pubName}: £${Math.round(p.currentSpend).toLocaleString("en-GB")} (${p.variancePercent >= 0 ? "+" : ""}${p.variancePercent.toFixed(1)}% vs average)`
+          `${p.rank}. ${p.pubName}: £${Math.round(p.currentSpend).toLocaleString("en-GB")} (${p.variancePercent >= 0 ? "+" : ""}${p.variancePercent.toFixed(1)}% vs spend average)`
       )
       .join("\n");
     return {
       matched: true,
-      answer: `Benchmark average for ${summary.currentMonth}: £${Math.round(summary.averageSpendPerPub).toLocaleString("en-GB")} per pub.\n${list}`,
+      answer: `Spend-pattern average for ${summary.currentMonth}: £${Math.round(summary.averageSpendPerPub).toLocaleString("en-GB")} per pub. Higher spend may reflect pub size or trading volume.\n${list}`,
     };
   }
 
@@ -48,12 +48,12 @@ export function answerFinanceQuestion(
     if (!top) {
       return {
         matched: true,
-        answer: "No pubs are currently flagged for overspending (>20% above 6-month average).",
+        answer: "No pubs are currently above their own spend trend by more than 20%.",
       };
     }
     return {
       matched: true,
-      answer: `${top.pubName} is overspending most at ${top.variancePercent.toFixed(1)}% above expected (£${Math.round(top.actualSpend).toLocaleString("en-GB")} actual vs £${Math.round(top.expectedSpend).toLocaleString("en-GB")} expected).`,
+      answer: `${top.pubName} is furthest above its own spend trend at ${top.variancePercent.toFixed(1)}% (GBP ${Math.round(top.actualSpend).toLocaleString("en-GB")} actual vs GBP ${Math.round(top.expectedSpend).toLocaleString("en-GB")} expected). Treat this as a review signal, not a judgement on the pub.`,
     };
   }
 
@@ -119,7 +119,7 @@ export function answerFinanceQuestion(
     const o = result.overview;
     return {
       matched: true,
-      answer: `Total portfolio spend (${result.referenceMonth}): £${Math.round(o.totalSpendThisMonth).toLocaleString("en-GB")}. ${o.percentVsLastMonth >= 0 ? "+" : ""}${o.percentVsLastMonth.toFixed(1)}% vs prior month. ${o.overspendingPubsCount} pub(s) overspending.`,
+      answer: `Total portfolio spend (${result.referenceMonth}): £${Math.round(o.totalSpendThisMonth).toLocaleString("en-GB")}. ${o.percentVsLastMonth >= 0 ? "+" : ""}${o.percentVsLastMonth.toFixed(1)}% vs prior month. ${o.overspendingPubsCount} pub(s) above their own spend trend.`,
     };
   }
 
@@ -136,6 +136,6 @@ export function answerFinanceQuestion(
   return {
     matched: false,
     answer:
-      'Try: "Which pub is overspending most?", "Top 3 suppliers increasing costs", "Top financial risks", or "Total spend this month".',
+      'Try: "Which pub is above trend?", "Top 3 suppliers increasing costs", "Top financial risks", or "Total spend this month".',
   };
 }

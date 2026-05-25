@@ -5,8 +5,9 @@ import {
   saveDemoRows,
 } from "@/lib/config";
 import { BATCH_SIZE } from "@/lib/import/constants";
+import { filterDuplicateRows } from "@/lib/import/dedupe";
 import { saveDemoJob } from "@/lib/import/demo-jobs";
-import { deleteAllSpendData } from "@/lib/spend-data";
+import { deleteAllSpendData, fetchSpendTransactions } from "@/lib/spend-data";
 import { createClient } from "@/lib/supabase/client";
 import type { Row } from "@/lib/csv-shared";
 import {
@@ -24,6 +25,8 @@ export type PersistIngestOptions = {
 export type PersistIngestResult = {
   ok: boolean;
   inserted: number;
+  duplicateRows: number;
+  importedRows: Row[];
   error?: string;
 };
 
@@ -38,16 +41,18 @@ export async function persistIngestedRows(
   const { filename, replaceExisting = false, skippedCount = 0 } = options;
 
   if (!rows.length) {
-    return { ok: false, inserted: 0, error: "No valid rows to import." };
+    return { ok: false, inserted: 0, duplicateRows: 0, importedRows: [], error: "No valid rows to import." };
   }
 
   if (isDemoModeClient()) {
     try {
+      const existingRows = replaceExisting ? [] : loadDemoRows();
       const previousRows = replaceExisting ? loadDemoRows() : undefined;
+      const { uniqueRows, duplicateCount } = filterDuplicateRows(rows, existingRows);
       if (replaceExisting) {
-        replaceDemoRows(rows);
-      } else {
-        saveDemoRows(rows);
+        replaceDemoRows(uniqueRows);
+      } else if (uniqueRows.length) {
+        saveDemoRows(uniqueRows);
       }
 
       saveDemoJob({
@@ -55,22 +60,24 @@ export async function persistIngestedRows(
         filename,
         status: "completed",
         totalRows: rows.length + skippedCount,
-        successRows: rows.length,
+        successRows: uniqueRows.length,
         errorRows: 0,
-        skippedRows: skippedCount,
+        skippedRows: skippedCount + duplicateCount,
         createdAt: new Date().toISOString(),
         completedAt: new Date().toISOString(),
         mapping: {},
         errors: [],
-        importedRows: rows,
+        importedRows: uniqueRows,
         previousRows,
       });
 
-      return { ok: true, inserted: rows.length };
+      return { ok: true, inserted: uniqueRows.length, duplicateRows: duplicateCount, importedRows: uniqueRows };
     } catch (err: unknown) {
       return {
         ok: false,
         inserted: 0,
+        duplicateRows: 0,
+        importedRows: [],
         error: err instanceof Error ? err.message : "Could not save data.",
       };
     }
@@ -83,16 +90,20 @@ export async function persistIngestedRows(
 
   if (!user) {
     try {
+      const existingRows = replaceExisting ? [] : loadDemoRows();
+      const { uniqueRows, duplicateCount } = filterDuplicateRows(rows, existingRows);
       if (replaceExisting) {
-        replaceDemoRows(rows);
-      } else {
-        saveDemoRows(rows);
+        replaceDemoRows(uniqueRows);
+      } else if (uniqueRows.length) {
+        saveDemoRows(uniqueRows);
       }
-      return { ok: true, inserted: rows.length };
+      return { ok: true, inserted: uniqueRows.length, duplicateRows: duplicateCount, importedRows: uniqueRows };
     } catch (err: unknown) {
       return {
         ok: false,
         inserted: 0,
+        duplicateRows: 0,
+        importedRows: [],
         error:
           err instanceof Error
             ? err.message
@@ -104,14 +115,16 @@ export async function persistIngestedRows(
   if (replaceExisting) {
     const { error: deleteError } = await deleteAllSpendData();
     if (deleteError) {
-      return { ok: false, inserted: 0, error: deleteError };
+      return { ok: false, inserted: 0, duplicateRows: 0, importedRows: [], error: deleteError };
     }
   }
 
+  const existingRows = replaceExisting ? [] : (await fetchSpendTransactions()).rows;
+  const { uniqueRows, duplicateCount } = filterDuplicateRows(rows, existingRows);
   let inserted = 0;
 
-  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-    const chunk = rows.slice(i, i + BATCH_SIZE).map((r) =>
+  for (let i = 0; i < uniqueRows.length; i += BATCH_SIZE) {
+    const chunk = uniqueRows.slice(i, i + BATCH_SIZE).map((r) =>
       toSpendTransactionInsert(r, user.id)
     );
 
@@ -135,6 +148,8 @@ export async function persistIngestedRows(
       return {
         ok: false,
         inserted,
+        duplicateRows: duplicateCount,
+        importedRows: [],
         error: hint
           ? `${hint} Original: ${error.message}`
           : `Insert failed at row ${i + 1}: ${error.message}`,
@@ -143,5 +158,5 @@ export async function persistIngestedRows(
     inserted += chunk.length;
   }
 
-  return { ok: true, inserted };
+  return { ok: true, inserted, duplicateRows: duplicateCount, importedRows: uniqueRows };
 }

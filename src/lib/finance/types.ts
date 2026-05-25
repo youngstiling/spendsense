@@ -54,6 +54,8 @@ export type BudgetVariance = {
 
 export type BenchmarkStatus = "ABOVE_AVERAGE" | "IN_LINE" | "BELOW_AVERAGE";
 
+export type BenchmarkConfidence = "LOW" | "MEDIUM" | "HIGH";
+
 export type PubBenchmark = {
   pubName: string;
   currentMonth: string;
@@ -62,6 +64,12 @@ export type PubBenchmark = {
   portfolioAverage: number;
   variancePercent: number;
   sixMonthAverage: number;
+  selfTrendVariancePercent: number;
+  amountVsPortfolioAverage: number;
+  amountVsOwnTrend: number;
+  mainDriverCategory: string;
+  mainDriverAmount: number;
+  confidence: BenchmarkConfidence;
   totalSpend: number;
   monthsActive: number;
   status: BenchmarkStatus;
@@ -93,6 +101,9 @@ export type FinancialEngineResult = {
   budgetVariances: BudgetVariance[];
   pubBenchmarks: PubBenchmark[];
   benchmarkSummary: BenchmarkSummary | null;
+  benchmarkCategories: string[];
+  categoryBenchmarks: Record<string, PubBenchmark[]>;
+  categoryBenchmarkSummaries: Record<string, BenchmarkSummary>;
   topRisks: FinancialRisk[];
   overview: {
     totalSpendThisMonth: number;

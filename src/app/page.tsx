@@ -38,7 +38,7 @@ export default function Home() {
               Turn pub spend CSVs into instant financial insight.
             </h1>
             <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-              Upload supplier spend data and see which pubs are overspending,
+              Upload supplier spend data and see which pubs are above their usual spend pattern,
               which suppliers are rising, where budget is drifting, and what to
               act on first.
             </p>
@@ -64,8 +64,8 @@ export default function Home() {
             </p>
             <div className="mt-4 space-y-3">
               {[
-                "Benchmark every pub against the portfolio average",
-                "Flag overspend, supplier inflation, and budget variance",
+                "Compare every pub against the portfolio spend pattern",
+                "Flag spend outliers, supplier inflation, and budget variance",
                 "Rank top financial risks by site",
                 "Ask natural-language questions about the data",
               ].map((item) => (
@@ -82,7 +82,7 @@ export default function Home() {
                 Typical first insight
               </p>
               <p className="mt-2 text-2xl font-semibold">
-                “This pub is 24% above benchmark.”
+                “This pub is 24% above the spend-pattern average.”
               </p>
               <p className="mt-2 text-sm text-turquoise-50">
                 From upload to answer in minutes, without rebuilding spreadsheets.

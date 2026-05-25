@@ -11,7 +11,7 @@ import {
 } from "../ui";
 
 const SUGGESTIONS = [
-  "Which pub is overspending most?",
+  "Which pub is above trend?",
   "Top 3 suppliers increasing costs",
   "Top financial risks",
   "Total spend this month",

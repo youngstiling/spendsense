@@ -6,7 +6,7 @@ function ruleBasedInsights(result: FinancialEngineResult): string[] {
 
   if (overview.overspendingPubsCount > 0) {
     bullets.push(
-      `${overview.overspendingPubsCount} pub${overview.overspendingPubsCount === 1 ? "" : "s"} exceed expected spend by over 20%, driven primarily by supplier cost increases and month-on-month spikes.`
+      `${overview.overspendingPubsCount} pub${overview.overspendingPubsCount === 1 ? "" : "s"} sit more than 20% above their own spend trend, driven primarily by supplier cost changes and month-on-month spikes.`
     );
   }
 
@@ -18,7 +18,7 @@ function ruleBasedInsights(result: FinancialEngineResult): string[] {
 
   if (benchmarkSummary && benchmarkSummary.highestVariancePercent > 20) {
     bullets.push(
-      `${benchmarkSummary.highestSpender} is the highest spender versus peer benchmark at ${benchmarkSummary.highestVariancePercent.toFixed(0)}% above the portfolio average.`
+      `${benchmarkSummary.highestSpender} has the highest spend pattern versus the portfolio average at ${benchmarkSummary.highestVariancePercent.toFixed(0)}% above average. Review category and supplier mix before drawing performance conclusions.`
     );
   }
 

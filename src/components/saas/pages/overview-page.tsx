@@ -45,9 +45,9 @@ export function OverviewPage() {
           }
         />
         <KpiCard
-          label="Overspending pubs"
+          label="Pubs above own trend"
           value={String(overview.overspendingPubsCount)}
-          sub=">20% above 6-mo average"
+          sub=">20% above own 6-mo spend trend"
           accent={overview.overspendingPubsCount > 0 ? "danger" : "default"}
         />
         <KpiCard
@@ -74,7 +74,7 @@ export function OverviewPage() {
             value={fmtGbp(engine.portfolioOverspend.excessSpend)}
           />
           <KpiCard
-            label="Pubs overspending"
+            label="Pubs above trend"
             value={String(engine.portfolioOverspend.pubsOverspending)}
           />
         </div>
@@ -82,12 +82,12 @@ export function OverviewPage() {
       {engine.benchmarkSummary && (
         <div className="mt-6 grid gap-4 lg:grid-cols-3">
           <KpiCard
-            label="Benchmark average"
+            label="Spend pattern average"
             value={fmtGbp(engine.benchmarkSummary.averageSpendPerPub)}
-            sub={`${engine.benchmarkSummary.pubCount} pubs in peer set`}
+            sub={`${engine.benchmarkSummary.pubCount} pubs compared`}
           />
           <KpiCard
-            label="Highest vs benchmark"
+            label="Highest vs spend pattern"
             value={engine.benchmarkSummary.highestSpender ?? "—"}
             sub={fmtPct(engine.benchmarkSummary.highestVariancePercent)}
             accent={

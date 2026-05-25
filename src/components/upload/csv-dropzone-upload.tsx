@@ -5,6 +5,7 @@ import { useCallback, useRef, useState } from "react";
 import { ingestCsvFile } from "@/lib/csv-ingest";
 import { persistIngestedRows } from "@/lib/csv-ingest-persist";
 import { validateCsvContent, validateUploadFile } from "@/lib/import/file-security";
+import { buildImportSummary } from "@/lib/import/summary";
 
 export function CsvDropzoneUpload() {
   const router = useRouter();
@@ -69,9 +70,15 @@ export function CsvDropzoneUpload() {
           return;
         }
 
-        const skippedNote =
-          skipped > 0 ? ` ${skipped} row${skipped === 1 ? "" : "s"} skipped.` : "";
-        setStatus(`Imported ${result.inserted} rows.${skippedNote} Opening insights...`);
+        setStatus(
+          buildImportSummary({
+            importedRows: result.importedRows,
+            skippedRows: skipped,
+            duplicateRows: result.duplicateRows,
+            replaceExisting,
+            nextAction: "Opening insights...",
+          })
+        );
         router.push("/overview");
       } catch (err: unknown) {
         setIsError(true);
@@ -152,7 +159,7 @@ export function CsvDropzoneUpload() {
 
       {status && (
         <p
-          className={`text-sm rounded-lg px-3 py-2 ${
+          className={`whitespace-pre-line text-sm rounded-lg px-3 py-2 ${
             isError
               ? "bg-red-50 text-red-800 border border-red-200"
               : "bg-slate-100 text-slate-700"

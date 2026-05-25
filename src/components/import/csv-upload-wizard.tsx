@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { parseSpendCsv, parseSpendCsvText } from "@/lib/csv";
+import { persistIngestedRows } from "@/lib/csv-ingest-persist";
 import {
   isDemoModeClient,
   loadDemoRows,
@@ -10,6 +11,8 @@ import {
   saveDemoRows,
 } from "@/lib/config";
 import { validateMapping } from "@/lib/import/column-mapper";
+import { filterDuplicateRows } from "@/lib/import/dedupe";
+import { buildImportSummary } from "@/lib/import/summary";
 import { saveDemoJob } from "@/lib/import/demo-jobs";
 import { buildErrorPreviewRows } from "@/lib/import/error-preview";
 import { errorsToCsv } from "@/lib/import/error-report";
@@ -19,6 +22,7 @@ import {
   saveDemoMappingTemplate,
   type MappingTemplate,
 } from "@/lib/import/mapping-templates";
+import { MAX_IMPORT_ROWS } from "@/lib/import/constants";
 import { buildParsePreview, dataStartRowNumber } from "@/lib/import/parse-rows";
 import { validateMappedRows } from "@/lib/import/validator";
 import {
@@ -27,12 +31,6 @@ import {
 } from "@/lib/brand-category";
 import { sumAmount } from "@/lib/sum-amount";
 import type { ColumnMapping, ImportRowError } from "@/lib/import/types";
-import { deleteAllSpendData } from "@/lib/spend-data";
-import {
-  SPEND_TRANSACTIONS_TABLE,
-  toSpendTransactionInsert,
-} from "@/lib/spend-transaction-db";
-import { createClient } from "@/lib/supabase/client";
 import type { Row } from "@/lib/csv-shared";
 import { ColumnMapperUi } from "./column-mapper-ui";
 import { LiveValidationPreview } from "./live-validation-preview";
@@ -72,7 +70,7 @@ export function CsvUploadWizard({
   const [errors, setErrors] = useState<ImportRowError[]>([]);
   const [validCount, setValidCount] = useState(0);
   const [validTotal, setValidTotal] = useState(0);
-  const [replaceExisting, setReplaceExisting] = useState(true);
+  const [replaceExisting, setReplaceExisting] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [truncated, setTruncated] = useState(false);
   const [sourceLabel, setSourceLabel] = useState("import.csv");
@@ -270,11 +268,13 @@ export function CsvUploadWizard({
   async function saveQuickRows(rows: Row[], label: string, skippedCount: number) {
     if (demo) {
       try {
+        const existingRows = replaceExisting ? [] : loadDemoRows();
         const previousRows = replaceExisting ? loadDemoRows() : undefined;
+        const { uniqueRows, duplicateCount } = filterDuplicateRows(rows, existingRows);
         if (replaceExisting) {
-          replaceDemoRows(rows);
-        } else {
-          saveDemoRows(rows);
+          replaceDemoRows(uniqueRows);
+        } else if (uniqueRows.length) {
+          saveDemoRows(uniqueRows);
         }
 
         saveDemoJob({
@@ -282,65 +282,57 @@ export function CsvUploadWizard({
           filename: label,
           status: "completed",
           totalRows: rows.length + skippedCount,
-          successRows: rows.length,
+          successRows: uniqueRows.length,
           errorRows: 0,
-          skippedRows: skippedCount,
+          skippedRows: skippedCount + duplicateCount,
           createdAt: new Date().toISOString(),
           completedAt: new Date().toISOString(),
           mapping: {},
           errors: [],
-          importedRows: rows,
+          importedRows: uniqueRows,
           previousRows,
         });
+
+        setIsError(false);
+        setStatus(
+          buildImportSummary({
+            importedRows: uniqueRows,
+            skippedRows: skippedCount,
+            duplicateRows: duplicateCount,
+            replaceExisting,
+          })
+        );
+        setStep("done");
+        onImportComplete?.();
+        return true;
       } catch (err: unknown) {
         setIsError(true);
         setStatus(err instanceof Error ? err.message : "Could not save data.");
         return false;
       }
-
-      setIsError(false);
-      setStatus(
-        `Imported ${rows.length} rows${skippedCount ? ` (${skippedCount} skipped)` : ""}.`
-      );
-      setStep("done");
-      onImportComplete?.();
-      return true;
     }
 
-    const supabase = createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const result = await persistIngestedRows(rows, {
+      filename: label,
+      replaceExisting,
+      skippedCount,
+    });
 
-    if (!user) {
+    if (!result.ok) {
       setIsError(true);
-      setStatus(
-        "Not logged in. Open /login first, or set NEXT_PUBLIC_DEMO_MODE=true in .env.local"
-      );
-      return false;
-    }
-
-    if (replaceExisting) {
-      const { error: deleteError } = await deleteAllSpendData();
-      if (deleteError) {
-        setIsError(true);
-        setStatus(deleteError);
-        return false;
-      }
-    }
-
-    const { error: saveError } = await supabase.from(SPEND_TRANSACTIONS_TABLE).insert(
-      rows.map((r) => toSpendTransactionInsert(r, user.id))
-    );
-
-    if (saveError) {
-      setIsError(true);
-      setStatus(saveError.message);
+      setStatus(result.error ?? "Import failed.");
       return false;
     }
 
     setIsError(false);
-    setStatus(`Imported ${rows.length} rows.`);
+    setStatus(
+      buildImportSummary({
+        importedRows: result.importedRows,
+        skippedRows: skippedCount,
+        duplicateRows: result.duplicateRows,
+        replaceExisting,
+      })
+    );
     setStep("done");
     onImportComplete?.();
     return true;
@@ -505,29 +497,38 @@ export function CsvUploadWizard({
           setProgress(i);
           await new Promise((r) => setTimeout(r, 80));
         }
+        const existingRows = replaceExisting ? [] : loadDemoRows();
         const previousRows = replaceExisting ? loadDemoRows() : undefined;
+        const { uniqueRows, duplicateCount } = filterDuplicateRows(validRows, existingRows);
         if (replaceExisting) {
-          replaceDemoRows(validRows);
-        } else {
-          saveDemoRows(validRows);
+          replaceDemoRows(uniqueRows);
+        } else if (uniqueRows.length) {
+          saveDemoRows(uniqueRows);
         }
         saveDemoJob({
           id: crypto.randomUUID(),
           filename: sourceLabel,
           status: validationErrors.length ? "partial" : "completed",
           totalRows: allRows.length,
-          successRows: validRows.length,
+          successRows: uniqueRows.length,
           errorRows: validationErrors.length,
-          skippedRows: 0,
+          skippedRows: duplicateCount,
           createdAt: new Date().toISOString(),
           completedAt: new Date().toISOString(),
           mapping,
           errors: validationErrors,
-          importedRows: validRows,
+          importedRows: uniqueRows,
           previousRows,
         });
         setStep("done");
-        setStatus(`Imported ${validRows.length} rows.`);
+        setStatus(
+          buildImportSummary({
+            importedRows: uniqueRows,
+            duplicateRows: duplicateCount,
+            errorRows: validationErrors.length,
+            replaceExisting,
+          })
+        );
         setProgress(100);
         onImportComplete?.();
       } else {
@@ -553,11 +554,7 @@ export function CsvUploadWizard({
           return;
         }
         setStep("done");
-        setStatus(
-          `Imported ${data.successRows} rows` +
-            (data.errorRows ? ` (${data.errorRows} errors logged)` : "") +
-            "."
-        );
+        setStatus(data.summary ?? `Imported ${data.successRows} rows.`);
         setProgress(100);
         onImportComplete?.();
       }
@@ -653,7 +650,7 @@ export function CsvUploadWizard({
 
       {status && step !== "done" && (
         <div
-          className={`rounded-lg border px-4 py-3 text-sm ${
+          className={`whitespace-pre-line rounded-lg border px-4 py-3 text-sm ${
             statusIsError
               ? "border-red-200 bg-red-50 text-red-800"
               : "border-slate-200 bg-white text-slate-700"
@@ -662,7 +659,7 @@ export function CsvUploadWizard({
           {status}
           {truncated && (
             <p className="mt-1 text-xs text-amber-700">
-              File truncated at row limit. Split large files for full import.
+              File truncated at {MAX_IMPORT_ROWS.toLocaleString("en-GB")} rows. Split large files for full import.
             </p>
           )}
         </div>
@@ -1005,7 +1002,7 @@ export function CsvUploadWizard({
       {step === "done" && (
         <div className="rounded-xl border bg-white p-8 text-center space-y-4">
           <p className="text-lg font-semibold text-slate-900">Import complete</p>
-          <p className="text-sm text-slate-600">{status}</p>
+          <p className="whitespace-pre-line text-sm text-slate-600">{status}</p>
           <div className="flex justify-center gap-3">
             <button
               type="button"

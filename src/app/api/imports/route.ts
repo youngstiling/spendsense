@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getApiUserId } from "@/lib/import/api-auth";
 import { checkRateLimit } from "@/lib/import/rate-limit";
 import { insertRowsInBatches, persistImportErrors } from "@/lib/import/process-job";
+import { buildImportSummary } from "@/lib/import/summary";
 import type { ColumnMapping, ImportRowError, Row } from "@/lib/import/types";
 import { createClient } from "@/lib/supabase/server";
 
@@ -116,7 +117,12 @@ export async function POST(request: Request) {
   }
 
   const importId = job.id as string;
-  const { successRows, error: insertError } = await insertRowsInBatches(
+  const {
+    successRows,
+    skippedDuplicates,
+    importedRows,
+    error: insertError,
+  } = await insertRowsInBatches(
     supabase,
     auth.userId,
     importId,
@@ -129,6 +135,12 @@ export async function POST(request: Request) {
   }
 
   const finalStatus = insertError ? "failed" : status;
+  const summary = buildImportSummary({
+    importedRows,
+    duplicateRows: skippedDuplicates,
+    errorRows: errors.length,
+    replaceExisting,
+  });
 
   await supabase
     .from("csv_import_jobs")
@@ -150,6 +162,8 @@ export async function POST(request: Request) {
         error: insertError,
         successRows,
         errorRows: errors.length,
+        duplicateRows: skippedDuplicates,
+        summary,
       },
       { status: 500 }
     );
@@ -161,6 +175,8 @@ export async function POST(request: Request) {
     totalRows,
     successRows,
     errorRows: errors.length,
+    duplicateRows: skippedDuplicates,
+    summary,
     skippedRows: Math.max(0, totalRows - successRows - errors.length),
     errors: errors.slice(0, 100),
   });

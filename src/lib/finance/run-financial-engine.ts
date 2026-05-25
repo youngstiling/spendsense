@@ -50,6 +50,9 @@ export function runFinancialEngine(txs: Transaction[]): FinancialEngineResult {
     budgetVariances,
     pubBenchmarks: benchmark.benchmarks,
     benchmarkSummary: benchmark.summary,
+    benchmarkCategories: benchmark.categories,
+    categoryBenchmarks: benchmark.byCategory,
+    categoryBenchmarkSummaries: benchmark.summariesByCategory,
     topRisks,
     overview: {
       totalSpendThisMonth,

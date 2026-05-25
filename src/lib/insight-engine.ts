@@ -3,6 +3,9 @@
  * Uses spend_transactions shape: pub (not pub_name), amount, date, supplier, category.
  */
 
+import { computeLegacyPubBenchmarks } from "@/lib/finance/engines/benchmark";
+import type { LegacyPubBenchmark } from "@/lib/finance/engines/benchmark";
+
 export type InsightRow = {
   pub: string;
   date: string;
@@ -29,11 +32,7 @@ export type InsightMetrics = {
   pubCount: number;
 };
 
-export type PubBenchmark = {
-  pub: string;
-  total: number;
-  vsAvg: number;
-};
+export type PubBenchmark = LegacyPubBenchmark;
 
 export type SpendAnomaly = {
   pub: string;
@@ -77,25 +76,9 @@ export function computeInsightMetrics(data: InsightRow[]): InsightMetrics {
   };
 }
 
+/** Legacy wrapper around the canonical Spend Pattern Benchmark engine. */
 export function benchmarkPubs(data: InsightRow[]): PubBenchmark[] {
-  const pubTotals: Record<string, number> = {};
-  for (const r of data) {
-    pubTotals[r.pub] = (pubTotals[r.pub] || 0) + r.amount;
-  }
-
-  const entries = Object.entries(pubTotals);
-  if (!entries.length) return [];
-
-  const avg =
-    entries.reduce((sum, [, total]) => sum + total, 0) / entries.length;
-
-  return entries
-    .map(([pub, total]) => ({
-      pub,
-      total,
-      vsAvg: avg > 0 ? ((total - avg) / avg) * 100 : 0,
-    }))
-    .sort((a, b) => b.total - a.total);
+  return computeLegacyPubBenchmarks(data);
 }
 
 export function detectSpendAnomalies(

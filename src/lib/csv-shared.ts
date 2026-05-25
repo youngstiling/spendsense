@@ -1,5 +1,6 @@
 import { format, isValid, parse as parseDateFns } from "date-fns";
 import currency from "currency.js";
+import { MAX_IMPORT_ROWS } from "@/lib/import/constants";
 import Fuse from "fuse.js";
 import {
   enrichTransactions,
@@ -23,7 +24,7 @@ export type Row = {
   canonicalSupplier?: string;
 };
 
-export const MAX_ROWS = 10_000;
+export const MAX_ROWS = MAX_IMPORT_ROWS;
 
 const DATE_FORMATS = [
   "yyyy-MM-dd",
@@ -190,7 +191,7 @@ export function buildRowsFromParsed(
   headers: string[]
 ) {
   if (data.length > MAX_ROWS) {
-    return { rows: [] as Row[], skipped: 0, error: "File exceeds 10,000 row limit." };
+    return { rows: [] as Row[], skipped: 0, error: `File exceeds ${MAX_ROWS.toLocaleString("en-GB")} row limit.` };
   }
 
   const dateKey = resolveDateKey(headers, data);

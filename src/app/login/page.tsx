@@ -128,7 +128,7 @@ export default function LoginPage() {
   return (
     <AuthScreen
       title="Welcome to SpendSense"
-      subtitle="Sign in to upload CSVs, benchmark pubs, and track supplier cost risk."
+      subtitle="Sign in to upload CSVs, compare pub spend patterns, and track supplier cost risk."
     >
       <form onSubmit={handleSubmit} className="space-y-4 text-left">
         <div>
@@ -166,7 +166,7 @@ export default function LoginPage() {
         <ul className="mt-3 space-y-2 text-xs leading-5 text-slate-600">
           <li>1. Sign in with your work email.</li>
           <li>2. Upload a spend CSV.</li>
-          <li>3. Open Benchmark and Overview for the first signals.</li>
+          <li>3. Open Spend Pattern Benchmark and Overview for the first signals.</li>
         </ul>
       </div>
 
