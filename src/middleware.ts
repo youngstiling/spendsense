@@ -5,6 +5,7 @@ import { updateSession } from "@/lib/supabase/middleware";
 const OPEN_PATH_PREFIXES = [
   "/dashboard",
   "/overview",
+  "/control-room",
   "/spend-increases",
   "/overspending",
   "/suppliers",

@@ -62,6 +62,18 @@ function now(): string {
   return new Date().toISOString();
 }
 
+function toPennies(value: number): number {
+  return Math.round(value * 100);
+}
+
+export function assertTotalsMatch(sqlTotal: number, engineTotal: number) {
+  if (toPennies(sqlTotal) !== toPennies(engineTotal)) {
+    throw new Error(
+      `Audit total mismatch: SQL ${sqlTotal} !== ENGINE ${engineTotal}`
+    );
+  }
+}
+
 export function createAuditEntry(
   metric: AuditMetric,
   source: AuditSource,
@@ -134,12 +146,17 @@ export function checkDrift(
 
 export function detectDrift(sql: number, engine: number): DriftDetection {
   const diff = Math.abs(sql - engine);
-  const percent = sql === 0 ? (engine === 0 ? 0 : 100) : (diff / sql) * 100;
+  const percent =
+    toPennies(sql) === 0
+      ? toPennies(engine) === 0
+        ? 0
+        : 100
+      : (diff / sql) * 100;
 
   return {
     drift: percent,
     status:
-      percent === 0
+      toPennies(sql) === toPennies(engine)
         ? "PERFECT"
         : percent < 1
           ? "ACCEPTABLE"

@@ -1,5 +1,6 @@
 "use client";
 
+import ControlRoomPanel from "@/components/ControlRoomPanel";
 import { useFinance } from "../finance-provider";
 import { AuditTrustPanel } from "../audit-trust-panel";
 import { fmtGbp, fmtPct } from "../format";
@@ -55,6 +56,9 @@ export function OverviewPage() {
           sub={engine.topRisks[0]?.keyIssue}
           accent="turquoise"
         />
+      </div>
+      <div className="mt-8">
+        <ControlRoomPanel />
       </div>
       <AuditTrustPanel report={audit} />
 

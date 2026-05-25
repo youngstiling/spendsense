@@ -4,6 +4,7 @@ export {
   detectDrift,
   trustScore,
   getEngineTotalSpend,
+  assertTotalsMatch,
   buildAuditLog,
   auditLog,
   logMetric,
