@@ -2,6 +2,10 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { BATCH_SIZE } from "./constants";
 import { filterDuplicateRows } from "./dedupe";
 import type { ImportRowError, Row } from "./types";
+import type {
+  ReconciliationException,
+  ReconciliationResult,
+} from "./reconciliation";
 import {
   SPEND_TRANSACTIONS_TABLE,
   rowsFromSpendTransactions,
@@ -63,6 +67,70 @@ export async function insertRowsInBatches(
   }
 
   return { successRows, skippedDuplicates: duplicateCount, importedRows: uniqueRows };
+}
+
+export async function persistReconciliationArtifacts(
+  supabase: SupabaseClient,
+  reconciliation: ReconciliationResult
+): Promise<void> {
+  const { certificate } = reconciliation;
+
+  // Best effort: deployments may run before the reconciliation migration is applied.
+  await supabase.from("import_verification_certificates").insert({
+    import_id: certificate.importId,
+    organisation_id: certificate.organisationId,
+    filename: certificate.filename,
+    uploaded_by: certificate.uploadedBy,
+    uploaded_at: certificate.uploadedAt,
+    verified_at: certificate.verifiedAt,
+    source_row_count: certificate.sourceRowCount,
+    imported_row_count: certificate.importedRowCount,
+    source_total: certificate.sourceTotal,
+    imported_total: certificate.importedTotal,
+    variance: certificate.variance,
+    confidence_score: certificate.confidenceScore,
+    status: certificate.status,
+    processing_duration_ms: certificate.processingDurationMs,
+  });
+
+  await persistStructuredExceptions(
+    supabase,
+    certificate.importId,
+    reconciliation.exceptions
+  );
+
+  await supabase
+    .from("csv_import_jobs")
+    .update({
+      verification_status: reconciliation.status,
+      confidence_score: reconciliation.confidenceScore,
+      verified_at: reconciliation.verifiedAt,
+      source_total: reconciliation.source.totalSpend,
+      imported_total: reconciliation.imported.totalSpend,
+      reconciliation_variance: reconciliation.variance,
+    })
+    .eq("id", certificate.importId);
+}
+
+async function persistStructuredExceptions(
+  supabase: SupabaseClient,
+  importId: string,
+  exceptions: ReconciliationException[]
+): Promise<void> {
+  if (!exceptions.length) return;
+
+  const chunkSize = 500;
+  for (let i = 0; i < exceptions.length; i += chunkSize) {
+    const slice = exceptions.slice(i, i + chunkSize).map((e) => ({
+      import_id: importId,
+      row_number: e.rowNumber,
+      error_type: e.errorType,
+      column_name: e.columnName,
+      original_value: e.originalValue,
+      reason: e.reason,
+    }));
+    await supabase.from("csv_import_exceptions").insert(slice);
+  }
 }
 
 export async function persistImportErrors(

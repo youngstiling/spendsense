@@ -6,6 +6,9 @@ import { ingestCsvFile } from "@/lib/csv-ingest";
 import { persistIngestedRows } from "@/lib/csv-ingest-persist";
 import { validateCsvContent, validateUploadFile } from "@/lib/import/file-security";
 import { buildImportSummary } from "@/lib/import/summary";
+import type { ReconciliationResult } from "@/lib/import/reconciliation";
+import { ExceptionPanel } from "@/components/import/exception-panel";
+import { ReconciliationCard } from "@/components/import/reconciliation-card";
 
 export function CsvDropzoneUpload() {
   const router = useRouter();
@@ -15,6 +18,8 @@ export function CsvDropzoneUpload() {
   const [replaceExisting, setReplaceExisting] = useState(false);
   const [status, setStatus] = useState("");
   const [isError, setIsError] = useState(false);
+  const [reconciliation, setReconciliation] =
+    useState<ReconciliationResult | null>(null);
 
   const processFile = useCallback(
     async (file: File) => {
@@ -27,6 +32,7 @@ export function CsvDropzoneUpload() {
 
       setBusy(true);
       setIsError(false);
+      setReconciliation(null);
       setStatus(`Reading ${file.name}...`);
 
       try {
@@ -76,10 +82,13 @@ export function CsvDropzoneUpload() {
             skippedRows: skipped,
             duplicateRows: result.duplicateRows,
             replaceExisting,
-            nextAction: "Opening insights...",
+            nextAction: "Verification certificate generated below.",
           })
         );
-        router.push("/overview");
+        setReconciliation(result.reconciliation ?? null);
+        if (result.reconciliation) {
+          setStatus(result.reconciliation.trustVerdict);
+        }
       } catch (err: unknown) {
         setIsError(true);
         setStatus(err instanceof Error ? err.message : "Upload failed.");
@@ -87,7 +96,7 @@ export function CsvDropzoneUpload() {
         setBusy(false);
       }
     },
-    [replaceExisting, router]
+    [replaceExisting]
   );
 
   const onDrop = useCallback(
@@ -167,6 +176,22 @@ export function CsvDropzoneUpload() {
         >
           {status}
         </p>
+      )}
+
+      {reconciliation && (
+        <div className="space-y-4">
+          <ReconciliationCard reconciliation={reconciliation} />
+          <ExceptionPanel exceptions={reconciliation.exceptions} />
+          {reconciliation.status !== "failed" && (
+            <button
+              type="button"
+              onClick={() => router.push("/overview")}
+              className="w-full rounded-xl bg-turquoise-600 px-4 py-3 text-sm font-semibold text-white hover:bg-turquoise-700"
+            >
+              Open reconciled insights
+            </button>
+          )}
+        </div>
       )}
 
       <p className="text-xs text-slate-500">

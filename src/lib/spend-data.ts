@@ -30,6 +30,33 @@ async function queryTransactions(
   };
 }
 
+async function queryAnalyticsEligibleImportIds(
+  userId: string
+): Promise<Set<string> | null> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("csv_import_jobs")
+    .select("id, verification_status")
+    .eq("user_id", userId)
+    .in("verification_status", ["verified", "warning"]);
+
+  if (error) {
+    return /verification_status|schema cache|column|relation/i.test(error.message)
+      ? null
+      : new Set();
+  }
+
+  return new Set((data ?? []).map((row) => String(row.id)));
+}
+
+function filterVerifiedRows(
+  rows: SpendTransactionDbRow[],
+  verifiedIds: Set<string> | null
+): SpendTransactionDbRow[] {
+  if (verifiedIds === null) return rows;
+  return rows.filter((row) => row.import_batch_id && verifiedIds.has(row.import_batch_id));
+}
+
 /** Load rows from spend_transactions; falls back to legacy columns if needed. */
 export async function fetchSpendTransactions(): Promise<{
   rows: Row[];
@@ -50,9 +77,11 @@ export async function fetchSpendTransactions(): Promise<{
     return { rows: [] };
   }
 
+  const verifiedImportIds = await queryAnalyticsEligibleImportIds(user.id);
+
   const full = await queryTransactions(user.id, SPEND_TRANSACTION_SELECT);
   if (!full.error && full.data) {
-    return { rows: rowsFromSpendTransactions(full.data) };
+    return { rows: rowsFromSpendTransactions(filterVerifiedRows(full.data, verifiedImportIds)) };
   }
 
   if (full.error && isSchemaMismatchError(full.error.message)) {
@@ -62,7 +91,7 @@ export async function fetchSpendTransactions(): Promise<{
     );
     if (!legacy.error && legacy.data) {
       return {
-        rows: rowsFromSpendTransactions(legacy.data),
+        rows: rowsFromSpendTransactions(filterVerifiedRows(legacy.data, verifiedImportIds)),
         usingLegacySchema: true,
         schemaHint:
           "Using basic table columns. Run supabase/fix-spend-transactions-schema.sql in Supabase SQL Editor when you can.",

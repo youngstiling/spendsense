@@ -34,16 +34,52 @@ async function queryDbRows(
   return data as unknown as SpendTransactionDbRow[];
 }
 
+async function queryAnalyticsEligibleImportIds(
+  userId: string
+): Promise<Set<string> | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("csv_import_jobs")
+    .select("id, verification_status")
+    .eq("user_id", userId)
+    .in("verification_status", ["verified", "warning"]);
+
+  if (error) {
+    return /verification_status|schema cache|column|relation/i.test(error.message)
+      ? null
+      : new Set();
+  }
+
+  return new Set((data ?? []).map((row) => String(row.id)));
+}
+
+function filterVerifiedDbRows(
+  rows: SpendTransactionDbRow[],
+  verifiedIds: Set<string> | null
+): SpendTransactionDbRow[] {
+  if (verifiedIds === null) return rows;
+  return rows.filter((row) => row.import_batch_id && verifiedIds.has(row.import_batch_id));
+}
+
 async function querySpendTransactionsServer(
   userId: string
 ): Promise<SpendTransaction[]> {
-  const strict = await queryValidatedSpendTransactions(userId);
+  const verifiedImportIds = await queryAnalyticsEligibleImportIds(userId);
+  if (verifiedImportIds && verifiedImportIds.size === 0) return [];
+
+  const strict = await queryValidatedSpendTransactions(userId, verifiedImportIds);
   if (strict.length) return strict;
 
-  const full = await queryDbRows(userId, SPEND_TRANSACTION_SELECT_FULL);
+  const full = filterVerifiedDbRows(
+    await queryDbRows(userId, SPEND_TRANSACTION_SELECT_FULL),
+    verifiedImportIds
+  );
   if (full.length) return spendTransactionsFromDbRows(full);
 
-  const legacy = await queryDbRows(userId, SPEND_TRANSACTION_SELECT_LEGACY);
+  const legacy = filterVerifiedDbRows(
+    await queryDbRows(userId, SPEND_TRANSACTION_SELECT_LEGACY),
+    verifiedImportIds
+  );
   if (legacy.length) {
     return legacy.map((r) =>
       spendTransactionFromDbRow({
@@ -53,14 +89,18 @@ async function querySpendTransactionsServer(
     );
   }
 
-  const minimal = await queryDbRows(userId, SPEND_TRANSACTION_SELECT);
+  const minimal = filterVerifiedDbRows(
+    await queryDbRows(userId, SPEND_TRANSACTION_SELECT),
+    verifiedImportIds
+  );
   if (minimal.length) return spendTransactionsFromDbRows(minimal);
 
   return [];
 }
 
 async function queryValidatedSpendTransactions(
-  userId: string
+  userId: string,
+  verifiedImportIds: Set<string> | null
 ): Promise<SpendTransaction[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -72,10 +112,11 @@ async function queryValidatedSpendTransactions(
   if (error) throw error;
   if (!data?.length) return [];
 
-  return data.map((row) =>
-    spendTransactionFromDbRow(
-      validateRow(row as ValidatableSpendRow) as SpendTransactionDbRow
-    )
+  return filterVerifiedDbRows(data as unknown as SpendTransactionDbRow[], verifiedImportIds).map(
+    (row) =>
+      spendTransactionFromDbRow(
+        validateRow(row as ValidatableSpendRow) as SpendTransactionDbRow
+      )
   );
 }
 
@@ -95,7 +136,10 @@ export async function getSpendTransactions(): Promise<SpendTransaction[]> {
     const message = err instanceof Error ? err.message : "";
     if (!isSchemaMismatchError(message)) throw err;
     const legacy = await queryDbRows(user.id, SPEND_TRANSACTION_SELECT_LEGACY);
-    return legacy.map((r) => spendTransactionFromDbRow(r));
+    const verifiedImportIds = await queryAnalyticsEligibleImportIds(user.id);
+    return filterVerifiedDbRows(legacy, verifiedImportIds).map((r) =>
+      spendTransactionFromDbRow(r)
+    );
   }
 }
 

@@ -12,6 +12,8 @@ type ApiImport = {
   successRows: number;
   errorRows: number;
   createdAt: string;
+  verificationStatus?: string;
+  confidenceScore?: number;
 };
 
 function formatWhen(iso: string) {
@@ -37,6 +39,21 @@ function statusLabel(status: string) {
       return "Failed";
     default:
       return status;
+  }
+}
+
+function verificationLabel(status?: string): string {
+  switch (status) {
+    case "verified":
+      return "Everything matches";
+    case "warning":
+      return "Verified with exceptions";
+    case "failed":
+      return "Reconciliation failed";
+    case "pending_verification":
+      return "Pending verification";
+    default:
+      return "";
   }
 }
 
@@ -133,6 +150,9 @@ export function ImportHistoryPanel({
                   {" | "}
                   {statusLabel(job.status)}
                   {"errorRows" in job && job.errorRows > 0 ? ` | ${job.errorRows} errors` : ""}
+                  {"verificationStatus" in job && job.verificationStatus
+                    ? ` | ${verificationLabel(job.verificationStatus)}${job.confidenceScore ? ` ${job.confidenceScore}%` : ""}`
+                    : ""}
                 </p>
               </div>
               {canUndo && (

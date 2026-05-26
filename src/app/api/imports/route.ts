@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { getApiUserId } from "@/lib/import/api-auth";
 import { checkRateLimit } from "@/lib/import/rate-limit";
-import { insertRowsInBatches, persistImportErrors } from "@/lib/import/process-job";
+import {
+  insertRowsInBatches,
+  persistImportErrors,
+  persistReconciliationArtifacts,
+} from "@/lib/import/process-job";
+import { buildReconciliationResult } from "@/lib/import/reconciliation";
 import { buildImportSummary } from "@/lib/import/summary";
 import type { ColumnMapping, ImportRowError, Row } from "@/lib/import/types";
 import { createClient } from "@/lib/supabase/server";
@@ -17,14 +22,30 @@ export async function GET() {
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const firstQuery = await supabase
     .from("csv_import_jobs")
     .select(
-      "id, filename, status, total_rows, success_rows, error_rows, skipped_rows, created_at, completed_at"
+      "id, filename, status, total_rows, success_rows, error_rows, skipped_rows, created_at, completed_at, verification_status, confidence_score"
     )
     .eq("user_id", auth.userId)
     .order("created_at", { ascending: false })
     .limit(50);
+  let data: Array<Record<string, unknown>> | null =
+    (firstQuery.data as Array<Record<string, unknown>> | null) ?? null;
+  let error = firstQuery.error;
+
+  if (error && /verification_status|confidence_score|schema cache|column/i.test(error.message)) {
+    const fallback = await supabase
+      .from("csv_import_jobs")
+      .select(
+        "id, filename, status, total_rows, success_rows, error_rows, skipped_rows, created_at, completed_at"
+      )
+      .eq("user_id", auth.userId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    data = (fallback.data as Array<Record<string, unknown>> | null) ?? null;
+    error = fallback.error;
+  }
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -41,6 +62,8 @@ export async function GET() {
       skippedRows: j.skipped_rows,
       createdAt: j.created_at,
       completedAt: j.completed_at,
+      verificationStatus: j.verification_status,
+      confidenceScore: j.confidence_score,
     })),
   });
 }
@@ -56,6 +79,7 @@ type ConfirmBody = {
 
 /** POST /api/imports — confirm import (validated rows from client wizard) */
 export async function POST(request: Request) {
+  const startedAt = Date.now();
   const auth = await getApiUserId();
   if ("error" in auth) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
@@ -78,6 +102,7 @@ export async function POST(request: Request) {
 
   const { filename, mapping, replaceExisting = false, rows, errors = [], totalRows } =
     body;
+  const uploadedAt = new Date().toISOString();
 
   if (!filename || !mapping?.date || !mapping?.amount || !Array.isArray(rows)) {
     return NextResponse.json(
@@ -135,12 +160,28 @@ export async function POST(request: Request) {
   }
 
   const finalStatus = insertError ? "failed" : status;
+  const skippedRows = Math.max(0, totalRows - rows.length - errors.length);
+  const reconciliation = buildReconciliationResult({
+    importId,
+    organisationId: auth.userId,
+    filename,
+    uploadedBy: auth.userId,
+    uploadedAt,
+    startedAt,
+    sourceRows: rows,
+    importedRows,
+    validationErrors: errors,
+    duplicateRows: skippedDuplicates,
+    skippedRows,
+    integrityError: insertError,
+  });
   const summary = buildImportSummary({
     importedRows,
     duplicateRows: skippedDuplicates,
     errorRows: errors.length,
     replaceExisting,
   });
+  await persistReconciliationArtifacts(supabase, reconciliation);
 
   await supabase
     .from("csv_import_jobs")
@@ -148,7 +189,7 @@ export async function POST(request: Request) {
       status: finalStatus,
       success_rows: successRows,
       error_rows: errors.length,
-      skipped_rows: Math.max(0, totalRows - successRows - errors.length),
+      skipped_rows: skippedRows + skippedDuplicates,
       error_summary: insertError ?? null,
       completed_at: new Date().toISOString(),
     })
@@ -164,6 +205,7 @@ export async function POST(request: Request) {
         errorRows: errors.length,
         duplicateRows: skippedDuplicates,
         summary,
+        reconciliation,
       },
       { status: 500 }
     );
@@ -177,7 +219,8 @@ export async function POST(request: Request) {
     errorRows: errors.length,
     duplicateRows: skippedDuplicates,
     summary,
-    skippedRows: Math.max(0, totalRows - successRows - errors.length),
+    reconciliation,
+    skippedRows: skippedRows + skippedDuplicates,
     errors: errors.slice(0, 100),
   });
 }

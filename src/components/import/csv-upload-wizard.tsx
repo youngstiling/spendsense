@@ -12,6 +12,10 @@ import {
 } from "@/lib/config";
 import { validateMapping } from "@/lib/import/column-mapper";
 import { filterDuplicateRows } from "@/lib/import/dedupe";
+import {
+  buildReconciliationResult,
+  type ReconciliationResult,
+} from "@/lib/import/reconciliation";
 import { buildImportSummary } from "@/lib/import/summary";
 import { saveDemoJob } from "@/lib/import/demo-jobs";
 import { buildErrorPreviewRows } from "@/lib/import/error-preview";
@@ -36,6 +40,8 @@ import { ColumnMapperUi } from "./column-mapper-ui";
 import { LiveValidationPreview } from "./live-validation-preview";
 import { PreviewTable, errorRowSet } from "./preview-table";
 import { SupplierMatchPreview } from "./supplier-match-preview";
+import { ExceptionPanel } from "./exception-panel";
+import { ReconciliationCard } from "./reconciliation-card";
 
 type Step = "upload" | "map" | "validate" | "done";
 type ImportMode = "guided" | "quick";
@@ -79,6 +85,8 @@ export function CsvUploadWizard({
   const [detectedHeaderRow, setDetectedHeaderRow] = useState(0);
   const [savedTemplates, setSavedTemplates] = useState<MappingTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [reconciliation, setReconciliation] =
+    useState<ReconciliationResult | null>(null);
 
   const headerRowsToSkip = mapping.headerRowsToSkip ?? 0;
   const startRowNumber = dataStartRowNumber(headerRowsToSkip);
@@ -126,6 +134,7 @@ export function CsvUploadWizard({
     setAutoMapping({});
     setDetectedHeaderRow(0);
     setSelectedTemplateId("");
+    setReconciliation(null);
   };
 
   const goToDashboard = () => {
@@ -147,6 +156,7 @@ export function CsvUploadWizard({
       setDetectedHeaderRow(parsed.detectedHeaderRow);
       setTruncated(parsed.truncated);
       setSourceLabel(label);
+      setReconciliation(null);
       setIsError(false);
       setStatus(
         `Found ${parsed.totalRowEstimate.toLocaleString()} rows. Map columns, then validate.`
@@ -268,6 +278,9 @@ export function CsvUploadWizard({
   async function saveQuickRows(rows: Row[], label: string, skippedCount: number) {
     if (demo) {
       try {
+        const startedAt = Date.now();
+        const importId = crypto.randomUUID();
+        const uploadedAt = new Date().toISOString();
         const existingRows = replaceExisting ? [] : loadDemoRows();
         const previousRows = replaceExisting ? loadDemoRows() : undefined;
         const { uniqueRows, duplicateCount } = filterDuplicateRows(rows, existingRows);
@@ -276,24 +289,38 @@ export function CsvUploadWizard({
         } else if (uniqueRows.length) {
           saveDemoRows(uniqueRows);
         }
+        const result = buildReconciliationResult({
+          importId,
+          organisationId: "demo",
+          filename: label,
+          uploadedBy: "demo",
+          uploadedAt,
+          startedAt,
+          sourceRows: rows,
+          importedRows: uniqueRows,
+          duplicateRows: duplicateCount,
+          skippedRows: skippedCount,
+        });
 
         saveDemoJob({
-          id: crypto.randomUUID(),
+          id: importId,
           filename: label,
-          status: "completed",
+          status: result.status === "verified" ? "completed" : "partial",
           totalRows: rows.length + skippedCount,
           successRows: uniqueRows.length,
-          errorRows: 0,
+          errorRows: result.exceptions.length,
           skippedRows: skippedCount + duplicateCount,
-          createdAt: new Date().toISOString(),
-          completedAt: new Date().toISOString(),
+          createdAt: uploadedAt,
+          completedAt: result.verifiedAt,
           mapping: {},
           errors: [],
           importedRows: uniqueRows,
           previousRows,
+          reconciliation: result,
         });
 
         setIsError(false);
+        setReconciliation(result);
         setStatus(
           buildImportSummary({
             importedRows: uniqueRows,
@@ -325,6 +352,7 @@ export function CsvUploadWizard({
     }
 
     setIsError(false);
+    setReconciliation(result.reconciliation ?? null);
     setStatus(
       buildImportSummary({
         importedRows: result.importedRows,
@@ -493,6 +521,9 @@ export function CsvUploadWizard({
 
     try {
       if (demo) {
+        const startedAt = Date.now();
+        const importId = crypto.randomUUID();
+        const uploadedAt = new Date().toISOString();
         for (let i = 0; i <= 100; i += 20) {
           setProgress(i);
           await new Promise((r) => setTimeout(r, 80));
@@ -505,22 +536,36 @@ export function CsvUploadWizard({
         } else if (uniqueRows.length) {
           saveDemoRows(uniqueRows);
         }
-        saveDemoJob({
-          id: crypto.randomUUID(),
+        const result = buildReconciliationResult({
+          importId,
+          organisationId: "demo",
           filename: sourceLabel,
-          status: validationErrors.length ? "partial" : "completed",
+          uploadedBy: "demo",
+          uploadedAt,
+          startedAt,
+          sourceRows: validRows,
+          importedRows: uniqueRows,
+          validationErrors,
+          duplicateRows: duplicateCount,
+        });
+        saveDemoJob({
+          id: importId,
+          filename: sourceLabel,
+          status: result.status === "verified" ? "completed" : "partial",
           totalRows: allRows.length,
           successRows: uniqueRows.length,
-          errorRows: validationErrors.length,
+          errorRows: result.exceptions.length,
           skippedRows: duplicateCount,
-          createdAt: new Date().toISOString(),
-          completedAt: new Date().toISOString(),
+          createdAt: uploadedAt,
+          completedAt: result.verifiedAt,
           mapping,
           errors: validationErrors,
           importedRows: uniqueRows,
           previousRows,
+          reconciliation: result,
         });
         setStep("done");
+        setReconciliation(result);
         setStatus(
           buildImportSummary({
             importedRows: uniqueRows,
@@ -554,6 +599,7 @@ export function CsvUploadWizard({
           return;
         }
         setStep("done");
+        setReconciliation((data.reconciliation as ReconciliationResult | undefined) ?? null);
         setStatus(data.summary ?? `Imported ${data.successRows} rows.`);
         setProgress(100);
         onImportComplete?.();
@@ -1000,17 +1046,28 @@ export function CsvUploadWizard({
       )}
 
       {step === "done" && (
-        <div className="rounded-xl border bg-white p-8 text-center space-y-4">
-          <p className="text-lg font-semibold text-slate-900">Import complete</p>
-          <p className="whitespace-pre-line text-sm text-slate-600">{status}</p>
+        <div className="space-y-4">
+          {reconciliation ? (
+            <>
+              <ReconciliationCard reconciliation={reconciliation} />
+              <ExceptionPanel exceptions={reconciliation.exceptions} />
+            </>
+          ) : (
+            <div className="rounded-xl border bg-white p-8 text-center space-y-4">
+              <p className="text-lg font-semibold text-slate-900">Import complete</p>
+              <p className="whitespace-pre-line text-sm text-slate-600">{status}</p>
+            </div>
+          )}
           <div className="flex justify-center gap-3">
-            <button
-              type="button"
-              onClick={goToDashboard}
-              className="rounded-lg bg-turquoise-600 text-white px-5 py-2.5 text-sm font-medium hover:bg-turquoise-700"
-            >
-              View dashboard
-            </button>
+            {reconciliation && reconciliation.status !== "failed" && (
+              <button
+                type="button"
+                onClick={goToDashboard}
+                className="rounded-lg bg-turquoise-600 text-white px-5 py-2.5 text-sm font-medium hover:bg-turquoise-700"
+              >
+                View reconciled dashboard
+              </button>
+            )}
             <button type="button" onClick={reset} className="rounded-lg border px-5 py-2.5 text-sm">
               Import another file
             </button>

@@ -7,6 +7,11 @@ import {
 import { BATCH_SIZE } from "@/lib/import/constants";
 import { filterDuplicateRows } from "@/lib/import/dedupe";
 import { saveDemoJob } from "@/lib/import/demo-jobs";
+import { persistReconciliationArtifacts } from "@/lib/import/process-job";
+import {
+  buildReconciliationResult,
+  type ReconciliationResult,
+} from "@/lib/import/reconciliation";
 import { deleteAllSpendData, fetchSpendTransactions } from "@/lib/spend-data";
 import { createClient } from "@/lib/supabase/client";
 import type { Row } from "@/lib/csv-shared";
@@ -27,6 +32,7 @@ export type PersistIngestResult = {
   inserted: number;
   duplicateRows: number;
   importedRows: Row[];
+  reconciliation?: ReconciliationResult;
   error?: string;
 };
 
@@ -46,6 +52,9 @@ export async function persistIngestedRows(
 
   if (isDemoModeClient()) {
     try {
+      const startedAt = Date.now();
+      const importId = crypto.randomUUID();
+      const uploadedAt = new Date().toISOString();
       const existingRows = replaceExisting ? [] : loadDemoRows();
       const previousRows = replaceExisting ? loadDemoRows() : undefined;
       const { uniqueRows, duplicateCount } = filterDuplicateRows(rows, existingRows);
@@ -54,24 +63,37 @@ export async function persistIngestedRows(
       } else if (uniqueRows.length) {
         saveDemoRows(uniqueRows);
       }
+      const reconciliation = buildReconciliationResult({
+        importId,
+        organisationId: "demo",
+        filename,
+        uploadedBy: "demo",
+        uploadedAt,
+        startedAt,
+        sourceRows: rows,
+        importedRows: uniqueRows,
+        duplicateRows: duplicateCount,
+        skippedRows: skippedCount,
+      });
 
       saveDemoJob({
-        id: crypto.randomUUID(),
+        id: importId,
         filename,
-        status: "completed",
+        status: reconciliation.status === "verified" ? "completed" : "partial",
         totalRows: rows.length + skippedCount,
         successRows: uniqueRows.length,
-        errorRows: 0,
+        errorRows: reconciliation.exceptions.length,
         skippedRows: skippedCount + duplicateCount,
-        createdAt: new Date().toISOString(),
-        completedAt: new Date().toISOString(),
+        createdAt: uploadedAt,
+        completedAt: reconciliation.verifiedAt,
         mapping: {},
         errors: [],
         importedRows: uniqueRows,
         previousRows,
+        reconciliation,
       });
 
-      return { ok: true, inserted: uniqueRows.length, duplicateRows: duplicateCount, importedRows: uniqueRows };
+      return { ok: true, inserted: uniqueRows.length, duplicateRows: duplicateCount, importedRows: uniqueRows, reconciliation };
     } catch (err: unknown) {
       return {
         ok: false,
@@ -97,7 +119,18 @@ export async function persistIngestedRows(
       } else if (uniqueRows.length) {
         saveDemoRows(uniqueRows);
       }
-      return { ok: true, inserted: uniqueRows.length, duplicateRows: duplicateCount, importedRows: uniqueRows };
+      const reconciliation = buildReconciliationResult({
+        importId: crypto.randomUUID(),
+        organisationId: "browser",
+        filename,
+        uploadedBy: "browser",
+        uploadedAt: new Date().toISOString(),
+        sourceRows: rows,
+        importedRows: uniqueRows,
+        duplicateRows: duplicateCount,
+        skippedRows: skippedCount,
+      });
+      return { ok: true, inserted: uniqueRows.length, duplicateRows: duplicateCount, importedRows: uniqueRows, reconciliation };
     } catch (err: unknown) {
       return {
         ok: false,
@@ -119,13 +152,31 @@ export async function persistIngestedRows(
     }
   }
 
+  const startedAt = Date.now();
+  const uploadedAt = new Date().toISOString();
+  const { data: job } = await supabase
+    .from("csv_import_jobs")
+    .insert({
+      user_id: user.id,
+      filename,
+      file_size_bytes: 0,
+      status: "processing",
+      replace_existing: replaceExisting,
+      column_mapping: {},
+      csv_headers: [],
+      total_rows: rows.length + skippedCount,
+    })
+    .select("id")
+    .single();
+  const importId = (job?.id as string | undefined) ?? crypto.randomUUID();
+  const batchExtra = job?.id ? { import_batch_id: importId } : undefined;
   const existingRows = replaceExisting ? [] : (await fetchSpendTransactions()).rows;
   const { uniqueRows, duplicateCount } = filterDuplicateRows(rows, existingRows);
   let inserted = 0;
 
   for (let i = 0; i < uniqueRows.length; i += BATCH_SIZE) {
     const chunk = uniqueRows.slice(i, i + BATCH_SIZE).map((r) =>
-      toSpendTransactionInsert(r, user.id)
+      toSpendTransactionInsert(r, user.id, batchExtra)
     );
 
     let { error } = await supabase.from(SPEND_TRANSACTIONS_TABLE).insert(chunk);
@@ -158,5 +209,33 @@ export async function persistIngestedRows(
     inserted += chunk.length;
   }
 
-  return { ok: true, inserted, duplicateRows: duplicateCount, importedRows: uniqueRows };
+  const importedRows = uniqueRows.slice(0, inserted);
+  const reconciliation = buildReconciliationResult({
+    importId,
+    organisationId: user.id,
+    filename,
+    uploadedBy: user.id,
+    uploadedAt,
+    startedAt,
+    sourceRows: rows,
+    importedRows,
+    duplicateRows: duplicateCount,
+    skippedRows: skippedCount,
+  });
+
+  await persistReconciliationArtifacts(supabase, reconciliation);
+  await supabase
+    .from("csv_import_jobs")
+    .update({
+      status: reconciliation.status === "verified" ? "completed" : "partial",
+      success_rows: inserted,
+      error_rows: reconciliation.exceptions.length,
+      skipped_rows: skippedCount + duplicateCount,
+      completed_at: reconciliation.verifiedAt,
+      error_summary:
+        reconciliation.status === "verified" ? null : reconciliation.message,
+    })
+    .eq("id", importId);
+
+  return { ok: true, inserted, duplicateRows: duplicateCount, importedRows, reconciliation };
 }

@@ -1,4 +1,5 @@
 import type { Row } from "@/lib/csv-shared";
+import type { ReconciliationResult, VerificationStatus } from "./reconciliation";
 
 /** SpendSense canonical import fields */
 export type SystemFieldKey =
@@ -55,6 +56,8 @@ export type ImportJobSummary = {
   skippedRows: number;
   createdAt: string;
   completedAt?: string;
+  verificationStatus?: VerificationStatus;
+  confidenceScore?: number;
 };
 
 export type ParsePreviewResult = {
@@ -78,6 +81,7 @@ export type ProcessImportResult = {
   errorRows: number;
   skippedRows: number;
   errors: ImportRowError[];
+  reconciliation?: ReconciliationResult;
 };
 
 export type { Row };

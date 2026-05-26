@@ -8,6 +8,9 @@
 export const SCHEMA_DOCS_PATH = "supabase/full-setup.sql";
 
 export const SPEND_TRANSACTIONS_TABLE = "spend_transactions" as const;
+export const IMPORT_VERIFICATION_CERTIFICATES_TABLE =
+  "import_verification_certificates" as const;
+export const CSV_IMPORT_EXCEPTIONS_TABLE = "csv_import_exceptions" as const;
 
 /** DB column names on spend_transactions (snake_case). */
 export const SpendTxCol = {

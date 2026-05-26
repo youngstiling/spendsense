@@ -2,6 +2,7 @@ import { loadDemoRows, replaceDemoRows } from "@/lib/config";
 import { readJsonStorage } from "@/lib/safe-storage";
 import type { Row } from "@/lib/csv-shared";
 import type { ColumnMapping, ImportJobSummary, ImportRowError } from "./types";
+import type { ReconciliationResult } from "./reconciliation";
 
 const JOBS_KEY = "spendsense-import-jobs";
 
@@ -10,6 +11,7 @@ export type DemoImportJob = ImportJobSummary & {
   errors: ImportRowError[];
   importedRows?: Row[];
   previousRows?: Row[];
+  reconciliation?: ReconciliationResult;
 };
 
 function rowFingerprint(row: Row): string {
