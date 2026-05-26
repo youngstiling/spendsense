@@ -27,6 +27,43 @@ const statusBadge: Record<MappingStatus, { label: string; className: string } | 
   optional: null,
 };
 
+function mappingReadiness(mapping: ColumnMapping, autoMapping: ColumnMapping) {
+  const amountSource = mapping.amountSource ?? "column";
+  const hasDate = Boolean(mapping.date);
+  const hasAmount =
+    amountSource === "debit_credit"
+      ? Boolean(mapping.debitColumn || mapping.creditColumn)
+      : Boolean(mapping.amount);
+  const optionalMapped = SYSTEM_FIELDS.filter(
+    (field) => !field.required && mapping[field.key]
+  ).length;
+  const autoMapped = SYSTEM_FIELDS.filter(
+    (field) => mapping[field.key] && mapping[field.key] === autoMapping[field.key]
+  ).length;
+
+  if (!hasDate || !hasAmount) {
+    return {
+      label: "Needs review",
+      className: "border-red-200 bg-red-50 text-red-900",
+      detail: "Date and amount must be mapped before this file can be trusted.",
+    };
+  }
+
+  if (optionalMapped >= 2 || autoMapped >= 3) {
+    return {
+      label: "High confidence",
+      className: "border-emerald-200 bg-emerald-50 text-emerald-900",
+      detail: "Required fields are mapped and key context columns were detected.",
+    };
+  }
+
+  return {
+    label: "Usable, add context",
+    className: "border-amber-200 bg-amber-50 text-amber-900",
+    detail: "Date and amount are mapped. Add supplier, pub/site or category where available for better analytics.",
+  };
+}
+
 export function ColumnMapperUi({
   headers,
   mapping,
@@ -40,6 +77,7 @@ export function ColumnMapperUi({
 }) {
   const options = ["", ...headers];
   const amountSource = mapping.amountSource ?? "column";
+  const readiness = mappingReadiness(mapping, autoMapping);
 
   function setAmountSource(mode: AmountSourceMode) {
     if (mode === "debit_credit") {
@@ -60,6 +98,16 @@ export function ColumnMapperUi({
 
   return (
     <div className="space-y-4">
+      <div className={`rounded-lg border px-4 py-3 ${readiness.className}`}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-semibold">Mapping readiness: {readiness.label}</p>
+          <p className="text-xs">
+            {Object.values(mapping).filter(Boolean).length.toLocaleString("en-GB")} fields mapped
+          </p>
+        </div>
+        <p className="mt-1 text-xs">{readiness.detail}</p>
+      </div>
+
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
         <p className="text-sm font-medium text-slate-800">Amount source</p>
         <div className="flex flex-wrap gap-2">

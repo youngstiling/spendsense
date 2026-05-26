@@ -122,9 +122,26 @@ export function previewSupplierMatch(raw: string): SupplierMatchPreview {
   return { raw, cleaned, normalized, canonicalMatch: null };
 }
 
+function normalizeHeader(raw: string): string {
+  return raw
+    .trim()
+    .toLowerCase()
+    .replace(/[_\-./]+/g, " ")
+    .replace(/\s+/g, " ");
+}
+
 function col(headers: string[], match: string) {
-  const h = headers.find((x) => x.toLowerCase().includes(match));
+  const needle = normalizeHeader(match);
+  const h = headers.find((x) => normalizeHeader(x).includes(needle));
   return h ?? null;
+}
+
+function colAny(headers: string[], matches: string[]) {
+  for (const match of matches) {
+    const found = col(headers, match);
+    if (found) return found;
+  }
+  return null;
 }
 
 /** Leading-comma exports use an empty first header; detect date column from sample values. */
@@ -195,23 +212,69 @@ export function buildRowsFromParsed(
   }
 
   const dateKey = resolveDateKey(headers, data);
-  const amountKey =
-    col(headers, "amount") ??
-    col(headers, "total") ??
-    col(headers, "value") ??
-    col(headers, "debit") ??
-    col(headers, "credit");
-  const pubKey = col(headers, "pub");
+  const amountKey = colAny(headers, [
+    "amount",
+    "amount gbp",
+    "total amount",
+    "invoice total",
+    "gross amount",
+    "net amount",
+    "net value",
+    "line value",
+    "transaction amount",
+    "spend",
+    "total",
+    "value",
+    "debit",
+    "credit",
+    "money out",
+  ]);
+  const pubKey = colAny(headers, [
+    "pub",
+    "site name",
+    "site",
+    "venue",
+    "outlet",
+    "location",
+    "branch",
+    "cost centre",
+    "cost center",
+    "business unit",
+  ]);
   const hasDescriptionHeader = col(headers, "description") != null;
   const descCol = col(headers, "desc");
-  const descriptionKey = col(headers, "description") ?? descCol;
+  const descriptionKey =
+    colAny(headers, ["description", "details", "narrative", "memo", "reference"]) ??
+    descCol;
   const supplierKey =
-    col(headers, "supplier") ??
-    col(headers, "vendor") ??
-    col(headers, "merchant") ??
-    col(headers, "payee") ??
-    (!hasDescriptionHeader && descCol ? descCol : null);
-  const categoryKey = col(headers, "category") ?? col(headers, "type");
+    colAny(headers, [
+      "supplier name",
+      "supplier",
+      "vendor name",
+      "vendor",
+      "merchant name",
+      "merchant",
+      "payee name",
+      "payee",
+      "counterparty",
+      "beneficiary",
+      "paid to",
+      "trading name",
+    ]) ?? (!hasDescriptionHeader && descCol ? descCol : null);
+  const categoryKey = colAny(headers, [
+    "spend category",
+    "category name",
+    "category",
+    "nominal name",
+    "nominal code",
+    "nominal ledger",
+    "ledger code",
+    "account code",
+    "gl code",
+    "department",
+    "expense type",
+    "type",
+  ]);
 
   if (!dateKey || !amountKey) {
     return {
